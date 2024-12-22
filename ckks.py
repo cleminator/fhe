@@ -88,7 +88,8 @@ class CKKS:
         rounded_scaled_pi_z = self.sigma_R_discretization(scaled_pi_z)
         p = self.sigma_inverse(rounded_scaled_pi_z)
         
-        coef = np.round(np.real(p.coef)).astype(int) #[round(x) for x in np.real(p.coef)]#
+        #coef = #np.round(np.real(p.coef)).astype(int)
+        coef = [round(x) for x in np.real(p.coef)]#
         p = Polynomial(coef, self.q)
         #print(p)
         return p

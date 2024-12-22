@@ -24,9 +24,9 @@ print(h_hat)
 print(ntt.intt_psi(h_hat))
 """
 M = 8
-sc = 4
+sc = 2**13
 #q = #2971215073#8380417#12289#7681#24287#1310717681
-q = 8380417
+q = 1310717681#8380417
 
 #p = Polynomial([1, 2, 3, 4], 7681)
 #print(p)
@@ -42,8 +42,8 @@ ckks = ckks.CKKS(M, sc, q)
 m1 = np.array([1+0j, 2+0j])#, 3+0j, 4+0j])
 m2 = np.array([3+0j, 4+0j])#, 3+0j, -4+0j])
 
-print(m1)
-print(m2)
+print("m1: ", m1)
+print("m2: ", m2)
 
 print("\n\n")
 
@@ -57,22 +57,31 @@ p2 = ckks.encode(m2)#np.array([1 +5j, 2 -1j]))
 
 #b = [1, 2]#, 3, 4]
 #p = ckks.encode(b)
-print(p1)
-print(p2)
+print("p1: ", p1)
+print("p2: ", p2)
 
 #h = Polynomial([320, 181, 320, 90], 7681)
 #print(ntt.ntt_psi(h))
 
 #print(ntt.ntt_psi(p))
 
-p = p1 * p2
-print(p)
+p_add = p1 + p2
+print("p1 + p2: ", p_add)
 
+p_mult = p1 * p2
+print("p1 * p2: ", p_mult)
 
-e = ckks.decode(p)
+p_mult.coeffs = [c / sc for c in p_mult.coeffs]
+
+e_add = ckks.decode(p_add)
+e_mult = ckks.decode(p_mult)
+
+#Rescaling test:
+
 
 #print(p)
-print(e)
+print("Result add:  ", e_add)
+print("Result mult: ", e_mult)
 
 #print("\n\n")
 
