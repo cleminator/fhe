@@ -74,3 +74,32 @@ def mod_exp(base, exp, mod):
             exp //= 2
         return result
 
+def is_prime(n):
+    if n <= 1:
+        return False
+    if n == 2:
+        return True
+    if n%2 == 0:
+        return False
+    
+    for i in range(3, int(n**0.5)+1, 2):
+        if n % i == 0:
+            return False
+    return True
+
+
+def find_next_prime(n):
+    p = n
+    if is_prime(p):
+        return p
+    # Go to the next odd number after n
+    if n % 2 == 0:
+        p+=1
+    else:
+        p+=2
+    
+    #Now loop through every odd number to check for primality
+    while(True):
+        if is_prime(p):
+            return p
+        p+=2

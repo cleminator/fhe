@@ -1,6 +1,7 @@
 import ntt
 from poly import Polynomial
 import ckks
+import util
 import numpy as np
 """
 g = Polynomial([1, 2, 3, 4], 7681)
@@ -24,9 +25,11 @@ print(h_hat)
 print(ntt.intt_psi(h_hat))
 """
 M = 8
-sc = 2**13
+delta = 2**8 #128 -> delta
+q0 = delta * 2**7
+L = 2
 #q = #2971215073#8380417#12289#7681#24287#1310717681
-q = 1310717681#8380417
+#q = 1310717591#8380417
 
 #p = Polynomial([1, 2, 3, 4], 7681)
 #print(p)
@@ -35,9 +38,11 @@ q = 1310717681#8380417
 #pol1 = Polynomial([1, 2, 3, 4], 7681)
 #pol2 = Polynomial([5, 6, 7, 8], 7681)
 
+print(util.find_next_prime(2**30))
+
 #print(pol1 * pol2)
 
-ckks = ckks.CKKS(M, sc, q)
+ckks = ckks.CKKS(M, util.find_next_prime(q0), util.find_next_prime(delta), L)
 
 m1 = np.array([1+0j, 2+0j])#, 3+0j, 4+0j])
 m2 = np.array([3+0j, 4+0j])#, 3+0j, -4+0j])
@@ -71,7 +76,10 @@ print("p1 + p2: ", p_add)
 p_mult = p1 * p2
 print("p1 * p2: ", p_mult)
 
-p_mult.coeffs = [c / sc for c in p_mult.coeffs]
+p_mult = ckks.rescale(p_mult)
+p_mult = p_mult * p_mult
+p_mult = ckks.rescale(p_mult)
+#p_mult.coeffs = [c / ql for c in p_mult.coeffs]
 
 e_add = ckks.decode(p_add)
 e_mult = ckks.decode(p_mult)

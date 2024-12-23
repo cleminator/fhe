@@ -4,12 +4,17 @@ import util
 import math
 
 class CKKS:
-    def __init__(self, m, scale, q):
+    def __init__(self, m, q0, delta, L):
         self.xi = np.exp(2 * np.pi * 1j / m)
         self.m = m
         self.create_sigma_R_basis()
-        self.scale = scale
-        self.q = q
+        self.q0 = q0
+        self.delta = delta
+        self.L = L
+        #self.q = q0 * ql**L
+    
+    def ql(self):
+        return self.q0 * self.delta**self.L
     
     def vandermonde(self):
         n = self.m // 2
@@ -84,21 +89,32 @@ class CKKS:
     
     def encode(self, vec):
         pi_z = self.pi_inverse(vec)
-        scaled_pi_z = self.scale * pi_z
+        scaled_pi_z = self.delta * pi_z
         rounded_scaled_pi_z = self.sigma_R_discretization(scaled_pi_z)
         p = self.sigma_inverse(rounded_scaled_pi_z)
         
         #coef = #np.round(np.real(p.coef)).astype(int)
         coef = [round(x) for x in np.real(p.coef)]#
-        p = Polynomial(coef, self.q)
+        p = Polynomial(coef, self.q0, self.delta, self.L)
         #print(p)
         return p
         
     
     def decode(self, p):
         pol = np.polynomial.Polynomial(p.coeffs)
-        rescaled_p = pol / self.scale
+        rescaled_p = pol / self.delta
         z = self.sigma(rescaled_p)
         pi_z = self.pi(z)
         return pi_z
-        
+    
+    #############
+    
+    def rescale(self, p):
+        print("RESCALE: ")
+        print(p.coeffs)
+        p1 = p
+        p1.coeffs = [math.floor(c / self.delta) for c in p.coeffs]
+        print(p1.coeffs)
+        p1.L -= 1
+        print(p1)
+        return p1
