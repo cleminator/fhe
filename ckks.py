@@ -4,14 +4,15 @@ import util
 import math
 
 class CKKS:
-    def __init__(self, m, q0, delta, L):
+    def __init__(self, m, q0, delta, L, sec_dist):
         self.xi = np.exp(2 * np.pi * 1j / m)
         self.m = m
         self.create_sigma_R_basis()
         self.q0 = q0
         self.delta = delta
         self.L = L
-        #self.q = q0 * ql**L
+        
+        self.sec_dist = sec_dist #Distribution used for secret key term s (all error terms e, e0, e1, v, u automatically use discrete gaussian)
     
     def ql(self):
         return self.q0 * self.delta**self.L
@@ -118,3 +119,43 @@ class CKKS:
         p1.L -= 1
         print(p1)
         return p1
+    
+    ##############
+    
+    
+    def keygen(self):
+        match self.sec_dist:
+            case 1:
+                s_c = util.sample_uniform_coeffs(self.m//2, self.ql())
+            case 2:
+                s_c = util.sample_gaussian_coeffs(self.m//2)
+            case 3:
+                s_c = util.sample_uniform_ternary_coeffs(self.m//2)
+            case _:
+                s_c = util.sample_uniform_ternary_coeffs(self.m//2)
+        s = Polynomial(s_c, self.q0, self.delta, self.L)
+        a = Polynomial(util.sample_uniform_coeffs(self.m//2, self.ql()), self.q0, self.delta, self.L)
+        e = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.q0, self.delta, self.L)
+        b = (a*s).scalar_mult(-1) + e
+                
+        self.sk = (1, s)
+        self.pk = (b, a)
+        
+        # TODO: Generate EVK
+    
+    def encrypt(self, m):
+        v = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.q0, self.delta, self.L)
+        e0 = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.q0, self.delta, self.L)
+        e1 = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.q0, self.delta, self.L)
+        
+        #c = ((v, v) * self.pk) + (m + e0, e1)
+        c0 = v * self.pk[0] + m + e0
+        c1 = v * self.pk[1] + e1
+        
+        return (c0, c1)
+    
+    def decrypt(self, c):
+        # c = (b, a)
+        # m' = b + a * s
+        return c[0] + c[1] * self.sk[1]
+        

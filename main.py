@@ -24,10 +24,16 @@ h_hat = ntt.ntt_psi(h)
 print(h_hat)
 print(ntt.intt_psi(h_hat))
 """
+print(util.sample_gaussian_coeffs(10))
+
+
+#exit()
+
 M = 8
-delta = 2**8 #128 -> delta
-q0 = delta * 2**7
+delta = 2**30 #128 -> delta
+q0 = delta * 2**4
 L = 2
+
 #q = #2971215073#8380417#12289#7681#24287#1310717681
 #q = 1310717591#8380417
 
@@ -42,10 +48,12 @@ print(util.find_next_prime(2**30))
 
 #print(pol1 * pol2)
 
-ckks = ckks.CKKS(M, util.find_next_prime(q0), util.find_next_prime(delta), L)
+ckks = ckks.CKKS(M, util.find_next_prime(q0), util.find_next_prime(delta), L, 2)
 
-m1 = np.array([1+0j, 2+0j])#, 3+0j, 4+0j])
-m2 = np.array([3+0j, 4+0j])#, 3+0j, -4+0j])
+ckks.keygen()
+
+m1 = np.array([0.1+0j, 0.2+0j])#, 3+0j, 4+0j])
+m2 = np.array([0.3+0j, 0.4+0j])#, 3+0j, -4+0j])
 
 print("m1: ", m1)
 print("m2: ", m2)
@@ -70,19 +78,35 @@ print("p2: ", p2)
 
 #print(ntt.ntt_psi(p))
 
+c1 = ckks.encrypt(p1)
+print(c1)
+pp1 = ckks.decrypt(c1)
+
+print("pp1: ", pp1)
+print("ep1: ", ckks.decode(pp1))
+print("e1:  ", ckks.decode(p1))
+
+exit()
+
 p_add = p1 + p2
 print("p1 + p2: ", p_add)
+p_add2 = p_add.scalar_mult(-1)
+print("scalar: ", p_add2)
 
 p_mult = p1 * p2
 print("p1 * p2: ", p_mult)
 
 p_mult = ckks.rescale(p_mult)
-p_mult = p_mult * p_mult
-p_mult = ckks.rescale(p_mult)
+
+#p_mult = p1 * p_mult# * p1
+#p_mult = ckks.rescale(p_mult)
 #p_mult.coeffs = [c / ql for c in p_mult.coeffs]
+
+print(p_mult)
 
 e_add = ckks.decode(p_add)
 e_mult = ckks.decode(p_mult)
+e_add2 = ckks.decode(p_add2)
 
 #Rescaling test:
 
@@ -90,6 +114,7 @@ e_mult = ckks.decode(p_mult)
 #print(p)
 print("Result add:  ", e_add)
 print("Result mult: ", e_mult)
+print("Result add * 2: ", e_add2)
 
 #print("\n\n")
 

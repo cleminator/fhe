@@ -61,6 +61,12 @@ class Polynomial:
             result[i] = self.mod(c1 - c2)# % self.q
         return Polynomial(result, self.q0, self.delta, self.L)
     
+    def scalar_mult(self, scalar):
+        #res = self
+        cfs = [scalar * c for c in self.coeffs]
+        
+        return Polynomial(cfs, self.q0, self.delta, self.L)
+    
     def __mul__(self, other):
         """
         a = ntt.ntt_psi(self)

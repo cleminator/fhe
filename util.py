@@ -1,3 +1,6 @@
+from enum import Enum
+import random
+
 def gaussian_elimination(matrix, vector):
     
     n = len(matrix)
@@ -103,3 +106,24 @@ def find_next_prime(n):
         if is_prime(p):
             return p
         p+=2
+
+
+
+
+# Uniformly sample coefficients from Z_q
+def sample_uniform_coeffs(n, q):
+    return [random.randrange(round(-(q-1)/2), round((q-1)/2)) for i in range(0, n)]
+
+# Discrete gaussian distribution with variance sigma^2
+def sample_gaussian_coeffs(n, sigma=3.2):
+    return [round(random.gauss(0, sigma**2)) for i in range(0, n)]
+
+# Uniform ternany distribution
+def sample_uniform_ternary_coeffs(n):
+    return [random.choice([-1, 0, 1]) for i in range(0, n)]
+
+
+class distribution(Enum):
+    UNIFORM = 1
+    GAUSSIAN = 2
+    TERNARY = 3
