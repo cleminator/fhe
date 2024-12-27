@@ -52,8 +52,8 @@ ckks = ckks.CKKS(M, util.find_next_prime(q0), util.find_next_prime(delta), L, 2)
 
 ckks.keygen()
 
-m1 = np.array([0.1+0j, 0.2+0j])#, 3+0j, 4+0j])
-m2 = np.array([0.3+0j, 0.4+0j])#, 3+0j, -4+0j])
+m1 = np.array([0.1, 0.2])#, 3+0j, 4+0j])
+m2 = np.array([0.3, 0.4])#, 3+0j, -4+0j])
 
 print("m1: ", m1)
 print("m2: ", m2)
@@ -80,7 +80,9 @@ print("p2: ", p2)
 
 c1 = ckks.encrypt(p1)
 print(c1)
+c1 = c1 + c1
 pp1 = ckks.decrypt(c1)
+
 
 print("pp1: ", pp1)
 print("ep1: ", ckks.decode(pp1))

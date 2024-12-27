@@ -92,6 +92,8 @@ class CKKS:
     ###########
     
     def encode(self, vec):
+        #Convert list of real numbers to complex numbers
+        vec = [complex(v, 0) for v in vec]
         pi_z = self.pi_inverse(vec)
         scaled_pi_z = self.delta * pi_z
         rounded_scaled_pi_z = self.sigma_R_discretization(scaled_pi_z)
@@ -109,6 +111,9 @@ class CKKS:
         rescaled_p = pol / self.delta
         z = self.sigma(rescaled_p)
         pi_z = self.pi(z)
+        #Extract real parts of complex vector
+        print(type(np.real(pi_z[0])))
+        pi_z = [np.real(c) for c in pi_z]
         return pi_z
     
     #############

@@ -23,7 +23,9 @@ class Ciphertext:
     ############
     
     def __add__(self, other):
-        pass
+        b = self.b + other.b
+        a = self.a + self.a
+        return Ciphertext(b, a, self.q0, self.delta, self.l)
     
     def __sub__(self, other):
         pass
