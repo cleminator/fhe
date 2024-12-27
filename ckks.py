@@ -1,7 +1,9 @@
 import numpy as np #Only use for basic stuff (exp(), complex numbers, etc.)
 from poly import Polynomial
+from ciphertext import Ciphertext
 import util
 import math
+
 
 class CKKS:
     def __init__(self, m, q0, delta, L, sec_dist):
@@ -14,8 +16,9 @@ class CKKS:
         
         self.sec_dist = sec_dist #Distribution used for secret key term s (all error terms e, e0, e1, v, u automatically use discrete gaussian)
     
-    def ql(self):
+    def qL(self):
         return self.q0 * self.delta**self.L
+        
     
     def vandermonde(self):
         n = self.m // 2
@@ -96,7 +99,7 @@ class CKKS:
         
         #coef = #np.round(np.real(p.coef)).astype(int)
         coef = [round(x) for x in np.real(p.coef)]#
-        p = Polynomial(coef, self.q0, self.delta, self.L)
+        p = Polynomial(coef, self.qL())
         #print(p)
         return p
         
@@ -110,32 +113,22 @@ class CKKS:
     
     #############
     
-    def rescale(self, p):
-        print("RESCALE: ")
-        print(p.coeffs)
-        p1 = p
-        p1.coeffs = [math.floor(c / self.delta) for c in p.coeffs]
-        print(p1.coeffs)
-        p1.L -= 1
-        print(p1)
-        return p1
     
-    ##############
     
     
     def keygen(self):
         match self.sec_dist:
             case 1:
-                s_c = util.sample_uniform_coeffs(self.m//2, self.ql())
+                s_c = util.sample_uniform_coeffs(self.m//2, self.qL())
             case 2:
                 s_c = util.sample_gaussian_coeffs(self.m//2)
             case 3:
                 s_c = util.sample_uniform_ternary_coeffs(self.m//2)
             case _:
                 s_c = util.sample_uniform_ternary_coeffs(self.m//2)
-        s = Polynomial(s_c, self.q0, self.delta, self.L)
-        a = Polynomial(util.sample_uniform_coeffs(self.m//2, self.ql()), self.q0, self.delta, self.L)
-        e = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.q0, self.delta, self.L)
+        s = Polynomial(s_c, self.qL())
+        a = Polynomial(util.sample_uniform_coeffs(self.m//2, self.qL()), self.qL())
+        e = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.qL())
         b = (a*s).scalar_mult(-1) + e
                 
         self.sk = (1, s)
@@ -144,18 +137,19 @@ class CKKS:
         # TODO: Generate EVK
     
     def encrypt(self, m):
-        v = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.q0, self.delta, self.L)
-        e0 = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.q0, self.delta, self.L)
-        e1 = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.q0, self.delta, self.L)
+        v = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.qL())
+        e0 = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.qL())
+        e1 = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.qL())
         
         #c = ((v, v) * self.pk) + (m + e0, e1)
         c0 = v * self.pk[0] + m + e0
         c1 = v * self.pk[1] + e1
         
-        return (c0, c1)
+        c = Ciphertext(c0, c1, self.q0, self.delta, self.L)
+        return c
     
     def decrypt(self, c):
         # c = (b, a)
         # m' = b + a * s
-        return c[0] + c[1] * self.sk[1]
+        return c.b + c.a * self.sk[1]
         
