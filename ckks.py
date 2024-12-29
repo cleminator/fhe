@@ -14,7 +14,10 @@ class CKKS:
         self.delta = delta
         self.L = L
         
-        self.sec_dist = sec_dist #Distribution used for secret key term s (all error terms e, e0, e1, v, u automatically use discrete gaussian)
+        self.P = delta #TODO: Check how to correctly set this
+        self.sec_dist = sec_dist 
+        #Distribution used for secret key term s (all error terms e, e0, e1, v, u automatically use discrete gaussian)
+        # Source: https://eprint.iacr.org/2024/463.pdf
     
     def qL(self):
         return self.q0 * self.delta**self.L
@@ -89,11 +92,13 @@ class CKKS:
         z_conjugate = [np.conjugate(x) for x in z_conjugate]
         return np.concatenate([z, z_conjugate])
     
-    ###########
+    
+    ############
+    
     
     def encode(self, vec):
         #Convert list of real numbers to complex numbers
-        vec = [complex(v, 0) for v in vec]
+        vec = [complex(vv, 0) for vv in vec]
         pi_z = self.pi_inverse(vec)
         scaled_pi_z = self.delta * pi_z
         rounded_scaled_pi_z = self.sigma_R_discretization(scaled_pi_z)
@@ -112,15 +117,15 @@ class CKKS:
         z = self.sigma(rescaled_p)
         pi_z = self.pi(z)
         #Extract real parts of complex vector
-        print(type(np.real(pi_z[0])))
+        #print(type(np.real(pi_z[0])))
         pi_z = [np.real(c) for c in pi_z]
         return pi_z
     
-    #############
     
-    
-    
-    
+    ######################################################
+       
+    # Function to generate public key, private key
+    # Source: https://eprint.iacr.org/2016/421.pdf (Section 3.4)
     def keygen(self):
         match self.sec_dist:
             case 1:
@@ -134,27 +139,41 @@ class CKKS:
         s = Polynomial(s_c, self.qL())
         a = Polynomial(util.sample_uniform_coeffs(self.m//2, self.qL()), self.qL())
         e = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.qL())
-        b = (a*s).scalar_mult(-1) + e
-                
-        self.sk = (1, s)
-        self.pk = (b, a)
+        b = a*s
+        b = b * -1
+        b = b + e
         
-        # TODO: Generate EVK
+        sk = (1, s)
+        pk = (b, a)
+        
+        return (pk, sk)
     
-    def encrypt(self, m):
-        v = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.qL())
+    # Function to generate evaluation key for Ciphertext-Ciphertext multiplication
+    # Source: https://eprint.iacr.org/2016/421.pdf (Section 3.4)
+    def evkeygen(self, sk):
+        ap = Polynomial(util.sample_uniform_coeffs(self.m//2, self.P * self.qL()), self.P * self.qL())
+        ep = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.P * self.qL())
+        bp = ((ap * sk[1]) * -1) + ep + (self.P * sk[1] * sk[1])
+        evk = (bp, ap)
+        return evk
+    
+    def encrypt(self, m, pk):
+        #v = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.qL())
+        v_c = util.sample_gaussian_coeffs(self.m//2)#[abs(x) for x in util.sample_uniform_ternary_coeffs(self.m//2)]
+        #print(v_c)
+        v = Polynomial([1]*(self.m//2), self.qL())
         e0 = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.qL())
         e1 = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.qL())
         
         #c = ((v, v) * self.pk) + (m + e0, e1)
-        c0 = v * self.pk[0] + m + e0
-        c1 = v * self.pk[1] + e1
+        c0 = (v * pk[0]) + m + e0
+        c1 = (v * pk[1]) + e1
         
         c = Ciphertext(c0, c1, self.q0, self.delta, self.L)
         return c
     
-    def decrypt(self, c):
+    def decrypt(self, c, sk):
         # c = (b, a)
         # m' = b + a * s
-        return c.b + c.a * self.sk[1]
+        return c.b + (c.a * sk[1])
         

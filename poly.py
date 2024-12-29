@@ -1,6 +1,8 @@
 import random
 import ntt
 import util
+import math
+
 
 class Polynomial:
     """
@@ -22,14 +24,16 @@ class Polynomial:
         #if (2*self.n) % (q-1) != 0:
         #    raise "2n must divide q-1 so that a 2nth primitive root of unity exists!"
     
-    
-    
     def __str__(self):
         """Return a string representation of the polynomial."""
         strng = "".join(str(self.coeffs))
         if self.q:
             strng += " (q = " + str(self.q) + ")"
         return strng
+    
+    
+    ##################################################
+    
     
     def mod(self, val):
         z_mod_q = val % self.q
@@ -38,23 +42,34 @@ class Polynomial:
         return z_mod_q
     
     def rescale(self, ql):
-        #print("RESCALE: ")
-        #print(p.coeffs)
-        #p1 = p
-        self.coeffs = [math.floor(c / q) for c in self.coeffs]
-        #print(p1.coeffs)
-        #p1.L -= 1
+        self.coeffs = [math.floor(c / ql) for c in self.coeffs]
         self.q //= ql
-        #print(p1)
-        #return p1
+    
+    def mod_reduction(self, ql):
+        self.q //= ql
+    
+    
+    def mod_exp(self, base, exp):
+        if not self.q:
+            raise Exception("No modulus defined!")
+        result = 1
+        while exp > 0:
+            if exp % 2 == 1:  # If exp is odd
+                result = self.mod(result * base)# % self.q
+            base = self.mod(base * base)# % self.q
+            exp //= 2
+        return result
+    
+    ##################################################
+    
     
     def __add__(self, other):
         max_len = max(self.n, other.n)
         result = [0] * max_len
         
-        if self.q != other.q:
-            print("Modulus q must be the same for both polynomials")
-            return None
+        #if self.q != other.q:
+        #    print("Modulus q must be the same for both polynomials")
+        #    return None
         
         for i in range(0, max_len):
             c1 = self.coeffs[i] if i < self.n else 0
@@ -68,9 +83,9 @@ class Polynomial:
         max_len = max(self.n, other.n)
         result = [0] * max_len
         
-        if self.q != other.q:
-            print("Modulus q must be the same for both polynomials")
-            return None
+        #if self.q != other.q:
+        #    print("Modulus q must be the same for both polynomials")
+        #    return None
         
         for i in range(0, max_len):
             c1 = self.coeffs[i] if i < self.n else 0
@@ -87,7 +102,15 @@ class Polynomial:
         return Polynomial(cfs, self.q)
     
     def __mul__(self, other):
-        return self.negacyclic_convolution(self, other)
+        if isinstance(other, Polynomial):
+            return self.negacyclic_convolution(self, other)
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.scalar_mult(other)
+        else:
+            raise Exception("Only Poly-Poly or Poly-int multiplication is posssible")
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
 
     def negacyclic_convolution(self, poly1, poly2):
         """
@@ -117,17 +140,11 @@ class Polynomial:
 
         return Polynomial(result, self.q)
     
-    def mod_exp(self, base, exp):
-        if not self.q:
-            raise Exception("No modulus defined!")
-        result = 1
-        while exp > 0:
-            if exp % 2 == 1:  # If exp is odd
-                result = self.mod(result * base)# % self.q
-            base = self.mod(base * base)# % self.q
-            exp //= 2
-        return result
     
+    
+    ##################################################
+    
+        
     def find_primitive_nth_root_of_unity(self, n):
         while True:
             x = random.randint(1, self.q - 1)
