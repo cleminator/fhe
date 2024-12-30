@@ -10,6 +10,9 @@ class CKKS:
         self.xi = np.exp(2 * np.pi * 1j / m)
         self.m = m
         self.create_sigma_R_basis()
+        
+        self.P = delta
+        
         self.q0 = q0
         self.delta = delta
         self.L = L
@@ -169,7 +172,7 @@ class CKKS:
         c0 = (v * pk[0]) + m + e0
         c1 = (v * pk[1]) + e1
         
-        c = Ciphertext(c0, c1, self.q0, self.delta, self.L)
+        c = Ciphertext(c0, c1, self.P, self.q0, self.delta, self.L)
         return c
     
     def decrypt(self, c, sk):

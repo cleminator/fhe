@@ -64,6 +64,10 @@ class Polynomial:
     
     
     def __add__(self, other):
+        from ciphertext import Ciphertext
+        if isinstance(other, Ciphertext):
+            return other + self
+        
         max_len = max(self.n, other.n)
         result = [0] * max_len
         
@@ -80,6 +84,8 @@ class Polynomial:
         return Polynomial(result, self.q)
     
     def __sub__(self, other):
+        
+        
         max_len = max(self.n, other.n)
         result = [0] * max_len
         
@@ -102,15 +108,19 @@ class Polynomial:
         return Polynomial(cfs, self.q)
     
     def __mul__(self, other):
+        from ciphertext import Ciphertext
         if isinstance(other, Polynomial):
             return self.negacyclic_convolution(self, other)
         elif isinstance(other, int) or isinstance(other, float):
             return self.scalar_mult(other)
+        elif isinstance(other, Ciphertext):
+            return other * self
         else:
-            raise Exception("Only Poly-Poly or Poly-int multiplication is posssible")
+            return NotImplemented
+            #raise Exception("Only Poly-Poly or Poly-int multiplication is posssible")
 
-    def __rmul__(self, other):
-        return self.__mul__(other)
+    #def __rmul__(self, other):
+    #    return self.__mul__(other)
 
     def negacyclic_convolution(self, poly1, poly2):
         """
