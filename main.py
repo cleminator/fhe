@@ -51,7 +51,7 @@ L = 2
 ckks = ckks.CKKS(M, util.find_next_prime(q0), util.find_next_prime(delta), L, 2)
 
 pk, sk = ckks.keygen()
-#evk = ckks.evkeygen(sk)
+evk = ckks.evkeygen(sk)
 
 m1 = np.array([0.1, 0.2])#, 3+0j, 4+0j])
 m2 = np.array([0.03, 0.04])#, 3+0j, -4+0j])
@@ -95,9 +95,10 @@ c1 = ckks.encrypt(p1, pk)
 #print(pk[1])
 
 c2 = ckks.encrypt(p2, pk)
-#print(c1)
+print("c1: ", c1)
 print("Addition: ")
-c3 = c2-c1#c1 * p1
+c3 = c2*[c1, evk]#c1 * p1
+print("c3: ", c3)
 #c3 = c3 - c2
 res = ckks.decrypt(c3, sk)
 

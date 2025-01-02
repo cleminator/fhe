@@ -83,8 +83,14 @@ class Ciphertext:
         d1 = c1.a * c2.b + c2.a * c1.b
         d2 = c1.a * c2.a
         
-        cmult0 = d0 + round((1/self.P) * d2 * evk[0])
-        cmult1 = d1 + round((1/self.P) * d2 * evk[1])
+        cmult0 = d2 * evk[0] * (1/self.P)
+        print(type(1/self.P), (1/self.P))
+        cmult0.coeffs = [round(c0) for c0 in cmult0.coeffs]
+        cmult0 += d0
+        #cmult1 = d1 + round(d2 * evk[1] * (1/self.P))
+        cmult1 = d2 * evk[1] * (1/self.P)
+        cmult1.coeffs = [round(c1) for c1 in cmult1.coeffs]
+        cmult1 += d1
         
         cmult = Ciphertext(cmult0, cmult1, self.P, self.q0, self.delta, self.l)
         cmult.rescale()

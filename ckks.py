@@ -156,7 +156,7 @@ class CKKS:
     def evkeygen(self, sk):
         ap = Polynomial(util.sample_uniform_coeffs(self.m//2, self.P * self.qL()), self.P * self.qL())
         ep = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.P * self.qL())
-        bp = ((ap * sk[1]) * -1) + ep + (self.P * sk[1] * sk[1])
+        bp = ((ap * sk[1]) * -1) + ep + (sk[1] * sk[1] * self.P)
         evk = (bp, ap)
         return evk
     
