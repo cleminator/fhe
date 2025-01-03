@@ -1,5 +1,5 @@
 import random
-import ntt
+#import ntt
 import util
 import math
 

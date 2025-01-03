@@ -24,6 +24,11 @@ class Ciphertext:
         self.b.rescale(self.delta)
         self.a.rescale(self.delta)
         self.l -= 1
+
+    def mod_reduction(self):
+        self.b.mod_reduction(self.delta)
+        self.a.mod_reduction(self.delta)
+        self.l -= 1
     
     ############
     
@@ -75,22 +80,48 @@ class Ciphertext:
         
         # Check if levels are different between both ciphertexts
         if c1.l > c2.l:
-            c1.mod_reduction(self.delta)            
+            c1.mod_reduction()
         elif self.l < other[0].l:
-            c2.mod_reduction(self.delta)
-        
+            c2.mod_reduction()
+
+        print("MULTCIPH")
+
         d0 = c1.b * c2.b
         d1 = c1.a * c2.b + c2.a * c1.b
         d2 = c1.a * c2.a
-        
-        cmult0 = d2 * evk[0] * (1/self.P)
-        print(type(1/self.P), (1/self.P))
-        cmult0.coeffs = [round(c0) for c0 in cmult0.coeffs]
-        cmult0 += d0
+        print("D0, D1, D2")
+        print(d0)
+        print(d1)
+        print(d2)
+
+        #d2.coeffs = [round(c / self.P) for c in d2.coeffs]
+        print("d2, evk[0]")
+        print(d2)
+        print(evk[0])
+
+        b_with_evk = evk[0] * d2
+        a_with_evk = evk[1] * d2
+
+        print("b * evk")
+        print(b_with_evk)
+
+
+        b_with_evk.rescale(self.P) #.coeffs = [round(c / self.P) for c in b_with_evk.coeffs]
+        a_with_evk.rescale(self.P) #.coeffs = [round(c / self.P) for c in a_with_evk.coeffs]
+
+        print(b_with_evk)
+
+        cmult0 = d0 + b_with_evk
+        cmult1 = d1 + a_with_evk
+
+        #cmult0 = d2 * evk[0] * (1/self.P)
+        #print(type(1/self.P), (1/self.P))
+        #cmult0.coeffs = [round(c0) for c0 in cmult0.coeffs]
+        #cmult0 += d0
         #cmult1 = d1 + round(d2 * evk[1] * (1/self.P))
-        cmult1 = d2 * evk[1] * (1/self.P)
-        cmult1.coeffs = [round(c1) for c1 in cmult1.coeffs]
-        cmult1 += d1
+        #cmult1 = d2 * evk[1] * (1/self.P)
+        #cmult1.coeffs = [round(c1) for c1 in cmult1.coeffs]
+        #cmult1 += d1
         
         cmult = Ciphertext(cmult0, cmult1, self.P, self.q0, self.delta, self.l)
         cmult.rescale()
@@ -110,4 +141,3 @@ class Ciphertext:
         else:
             return NotImplemented
         
-    

@@ -30,6 +30,7 @@ print(util.sample_gaussian_coeffs(10))
 #exit()
 
 M = 8
+P = 2**50
 delta = 2**30 #128 -> delta
 q0 = delta * 2**6
 L = 2
@@ -48,7 +49,7 @@ L = 2
 
 #print(pol1 * pol2)
 
-ckks = ckks.CKKS(M, util.find_next_prime(q0), util.find_next_prime(delta), L, 2)
+ckks = ckks.CKKS(M, P, util.find_next_prime(q0), util.find_next_prime(delta), L, 2)
 
 pk, sk = ckks.keygen()
 evk = ckks.evkeygen(sk)
@@ -99,7 +100,7 @@ print("c1: ", c1)
 print("Addition: ")
 c3 = c2*[c1, evk]#c1 * p1
 print("c3: ", c3)
-#c3 = c3 - c2
+#c3 = c1 - c2
 res = ckks.decrypt(c3, sk)
 
 
