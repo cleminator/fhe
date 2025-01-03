@@ -11,12 +11,12 @@ class CKKS:
         self.m = m
         self.create_sigma_R_basis()
 
-        
+        self.P = P
+
         self.q0 = q0
         self.delta = delta
         self.L = L
-        
-        self.P = P
+
         self.sec_dist = sec_dist 
         #Distribution used for secret key term s (all error terms e, e0, e1, v, u automatically use discrete gaussian)
         # Source: https://eprint.iacr.org/2024/463.pdf
@@ -152,21 +152,14 @@ class CKKS:
     # Function to generate evaluation key for Ciphertext-Ciphertext multiplication
     # Source: https://eprint.iacr.org/2016/421.pdf (Section 3.4)
     def evkeygen(self, sk):
-        print("EVK Gen")
         ap = Polynomial(util.sample_uniform_coeffs(self.m//2, self.P * self.qL()), self.P * self.qL())
-        print(ap)
         ep = Polynomial(util.sample_gaussian_coeffs(self.m//2), self.P * self.qL())
-        print(sk[1])
+
         bp = ap * sk[1]
-        print(type(bp), bp)
         bp = bp * -1
-        print(type(bp), bp)
         bp = bp + ep
-        print(type(bp), bp)
         p_term = (sk[1] * sk[1] * self.P)
-        print(type(p_term), p_term, self.P)
         bp = bp + p_term
-        print(type(bp), bp)
         evk = (bp, ap)
         return evk
     
