@@ -61,8 +61,13 @@ class Polynomial:
         return result
     
     ##################################################
-    
-    
+
+    def solve(self, x):
+        result = 0
+        for i, coeff in enumerate(self.coeffs):
+            result += coeff * (x ** i)
+        return result
+
     def __add__(self, other):
         from ciphertext import Ciphertext
         if isinstance(other, Ciphertext):

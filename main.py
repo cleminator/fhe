@@ -2,35 +2,10 @@ import ntt
 from poly import Polynomial
 import ckks
 import util
-import numpy as np
-"""
-g = Polynomial([1, 2, 3, 4], 7681)
-h = Polynomial([320, 181, 320, 90], 7681)
-print("g & h")
-g_hat = ntt.ntt_psi(g)
-print(g_hat)
-h_hat = ntt.ntt_psi(h)
-print(h_hat)
-print(g * h)
 
-print("\n\n...\n\n")
-
-g_hat = ntt.ntt_psi(g)
-print(g_hat)
-
-print(ntt.intt_psi(g_hat))
-
-h_hat = ntt.ntt_psi(h)
-print(h_hat)
-print(ntt.intt_psi(h_hat))
-"""
-print(util.sample_gaussian_coeffs(10))
-
-
-#exit()
 
 M = 8
-P = 2**50
+P = 2**55
 delta = 2**30 #128 -> delta
 q0 = delta * 2**6
 L = 2
@@ -54,8 +29,8 @@ ckks = ckks.CKKS(M, P, util.find_next_prime(q0), util.find_next_prime(delta), L,
 pk, sk = ckks.keygen()
 evk = ckks.evkeygen(sk)
 
-m1 = np.array([0.1, 0.2])#, 3+0j, 4+0j])
-m2 = np.array([0.03, 0.04])#, 3+0j, -4+0j])
+m1 = [0.1, 0.2]#, 3+0j, 4+0j])
+m2 = [0.03, 0.04]#, 3+0j, -4+0j])
 
 print("m1: ", m1)
 print("m2: ", m2)
@@ -98,7 +73,8 @@ c1 = ckks.encrypt(p1, pk)
 c2 = ckks.encrypt(p2, pk)
 print("c1: ", c1)
 print("Addition: ")
-c3 = c2*[c1, evk]#c1 * p1
+c3 = c1 + c2
+#c3 = c2*[c1, evk]#c1 * p1
 print("c3: ", c3)
 #c3 = c1 - c2
 res = ckks.decrypt(c3, sk)

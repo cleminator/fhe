@@ -1,15 +1,16 @@
-import numpy as np #Only use for basic stuff (exp(), complex numbers, etc.)
 from poly import Polynomial
 from ciphertext import Ciphertext
 import util
-import math
+from math import e, pi, floor
+import random
 
 
 class CKKS:
     def __init__(self, m, P, q0, delta, L, sec_dist):
-        self.xi = np.exp(2 * np.pi * 1j / m)
+        self.xi = e ** (2 * pi * 1j / m) # E ** (2 * PI * 1j / m)
         self.m = m
-        self.create_sigma_R_basis()
+        self.sigma_R_basis = self.create_sigma_R_basis()
+        self.sigma_R_basis_T = self.transpose(self.sigma_R_basis)
 
         self.P = P
 
@@ -24,6 +25,36 @@ class CKKS:
     def qL(self):
         return self.q0 * self.delta**self.L
 
+    def transpose(self, matrix):
+        rows = len(matrix)
+        cols = len(matrix[0])
+
+        transposed = [[] for _ in range(cols)]
+
+        for row in matrix:
+            for j, val in enumerate(row):
+                transposed[j].append(val)
+
+        return transposed
+
+    def vdot(self, a, b):
+        if len(a) != len(b):
+            raise ValueError("Inputs must have the same length.")
+        return sum((x.conjugate() if isinstance(x, complex) else x) * y for x, y in zip(a, b))
+
+    def matmul(self, a, b):
+        if len(a[0]) != len(b):
+            raise ValueError("Incompatible matrix dimensions for multiplication")
+        if not isinstance(b[0], list):
+            b = [[bb] for bb in b]
+        result = [[0] * len(b[0]) for _ in range(len(a))]
+        for i in range(len(a)):  # Iterate over rows of A
+            for j in range(len(b[0])):  # Iterate over columns of B
+                for k in range(len(b)):  # Iterate over rows of B (columns of A)
+                    result[i][j] += a[i][k] * b[k][j]
+
+        return result
+
     def vandermonde(self):
         n = self.m // 2
         matrix = []
@@ -36,24 +67,32 @@ class CKKS:
         return matrix
     
     def create_sigma_R_basis(self):
-        self.sigma_R_basis = np.array(self.vandermonde()).T
-    
+        #return np.array(self.vandermonde()).T
+        return self.transpose(self.vandermonde())
+
     def compute_basis_coordinates(self, z):
         """Computes the coordinates of a vector with respect to the orthogonal lattice basis."""
-        output = np.array([np.real(np.vdot(z, b) / np.vdot(b,b)) for b in self.sigma_R_basis])
+        output = [(self.vdot(z, b) / self.vdot(b,b)).real for b in self.sigma_R_basis]
         return output
 
     def round_coordinates(self, coordinates):
         """Gives the integral rest."""
-        coordinates = coordinates - np.floor(coordinates)
+        coordinates = [c - floor(c) for c in coordinates]
         return coordinates
 
+    def cust_rand(self, c):
+        rand = random.random()
+        if rand < 1 - c:
+            return c
+        else:
+            return 1 - c
+
     def coordinate_wise_random_rounding(self, coordinates):
-        """Rounds coordinates randonmly."""
+        """Rounds coordinates randomly."""
         r = self.round_coordinates(coordinates)
-        f = np.array([np.random.choice([c, c-1], 1, p=[1-c, c]) for c in r]).reshape(-1)
-        
-        rounded_coordinates = coordinates - f
+
+        f = [self.cust_rand(c) for c in r]
+        rounded_coordinates = [cc - ff for cc, ff in zip(coordinates, f)]
         rounded_coordinates = [int(coeff) for coeff in rounded_coordinates]
         return rounded_coordinates
         
@@ -62,7 +101,8 @@ class CKKS:
         coordinates = self.compute_basis_coordinates(z)
         
         rounded_coordinates = self.coordinate_wise_random_rounding(coordinates)
-        y = np.matmul(self.sigma_R_basis.T, rounded_coordinates)
+        y = self.matmul(self.sigma_R_basis_T, rounded_coordinates)
+        y = [yy[0] for yy in y]
         return y
     
     ##########
@@ -70,7 +110,7 @@ class CKKS:
     def sigma_inverse(self, vec):
         van = self.vandermonde()
         coeffs = util.gaussian_elimination(van, vec)
-        p = np.polynomial.Polynomial(coeffs)
+        p = Polynomial(coeffs)
         return p
     
     def sigma(self, p):
@@ -78,7 +118,7 @@ class CKKS:
         n = self.m // 2
         for i in range(n):
             root = self.xi ** (2 * i + 1)
-            output = p(root)
+            output = p.solve(root)
             outputs.append(output)
         return outputs
     
@@ -90,8 +130,8 @@ class CKKS:
     
     def pi_inverse(self, z):
         z_conjugate = z[::-1]
-        z_conjugate = [np.conjugate(x) for x in z_conjugate]
-        return np.concatenate([z, z_conjugate])
+        z_conjugate = [x.conjugate() for x in z_conjugate]
+        return z + z_conjugate #np.concatenate([z, z_conjugate])
     
     
     ############
@@ -101,25 +141,22 @@ class CKKS:
         #Convert list of real numbers to complex numbers
         vec = [complex(vv, 0) for vv in vec]
         pi_z = self.pi_inverse(vec)
-        scaled_pi_z = self.delta * pi_z
+        scaled_pi_z = [self.delta * z for z in pi_z] #self.delta * pi_z
         rounded_scaled_pi_z = self.sigma_R_discretization(scaled_pi_z)
         p = self.sigma_inverse(rounded_scaled_pi_z)
         
         #coef = #np.round(np.real(p.coef)).astype(int)
-        coef = [round(x) for x in np.real(p.coef)]#
+        coef = [round(x.real) for x in p.coeffs]
         p = Polynomial(coef, self.qL())
-        #print(p)
         return p
         
     
     def decode(self, p):
-        pol = np.polynomial.Polynomial(p.coeffs)
-        rescaled_p = pol / self.delta
+        rescaled_p = Polynomial([c / self.delta for c in p.coeffs])
         z = self.sigma(rescaled_p)
         pi_z = self.pi(z)
         #Extract real parts of complex vector
-        #print(type(np.real(pi_z[0])))
-        pi_z = [np.real(c) for c in pi_z]
+        pi_z = [c.real for c in pi_z]
         return pi_z
     
     

@@ -2,30 +2,25 @@ from enum import Enum
 import random
 
 def gaussian_elimination(matrix, vector):
-    
     n = len(matrix)
+
+    # Ensure the vector supports complex numbers
+    vector = [complex(v) for v in vector]
 
     # Forward elimination
     for i in range(n):
-        # Make the diagonal element non-zero by swapping rows if necessary
-        if matrix[i][i] == 0:
-            for j in range(i + 1, n):
-                if matrix[j][i] != 0:
-                    matrix[i], matrix[j] = matrix[j], matrix[i]
-                    vector[i], vector[j] = vector[j], vector[i]
-                    break
-            else:
-                raise ValueError("Matrix is singular or nearly singular.")
-        
-        # Scale the pivot row
-        pivot = matrix[i][i]
-        for k in range(i, n):
-            matrix[i][k] /= pivot
-        vector[i] /= pivot
+        # Pivot selection (partial pivoting)
+        max_row = i + max(range(n - i), key=lambda k: abs(matrix[i + k][i]))
+        if matrix[max_row][i] == 0:
+            raise ValueError("Matrix is singular or nearly singular.")
 
-        # Eliminate the current column in rows below
+        # Swap rows in the matrix and the vector
+        matrix[i], matrix[max_row] = matrix[max_row], matrix[i]
+        vector[i], vector[max_row] = vector[max_row], vector[i]
+
+        # Make the diagonal element 1 and eliminate below
         for j in range(i + 1, n):
-            factor = matrix[j][i]
+            factor = matrix[j][i] / matrix[i][i]
             for k in range(i, n):
                 matrix[j][k] -= factor * matrix[i][k]
             vector[j] -= factor * vector[i]
@@ -33,11 +28,11 @@ def gaussian_elimination(matrix, vector):
     # Back substitution
     solution = [0] * n
     for i in range(n - 1, -1, -1):
-        solution[i] = vector[i]
-        for j in range(i + 1, n):
-            solution[i] -= matrix[i][j] * solution[j]
+        sum_ax = sum(matrix[i][j] * solution[j] for j in range(i + 1, n))
+        solution[i] = (vector[i] - sum_ax) / matrix[i][i]
 
     return solution
+
 
 def findMultInv(a, n):
     # Compute Extended Euclidian algorithm
