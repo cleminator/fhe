@@ -1,7 +1,7 @@
 from poly import Polynomial
 from ciphertext import Ciphertext
 import util
-from math import e, pi, floor
+from math import e, pi, floor, ceil
 import random
 
 
@@ -52,31 +52,15 @@ class CKKS:
         Source: https://blog.openmined.org/ckks-explained-part-2-ckks-encoding-and-decoding/"""
         output = [(util.vdot(z, b) / util.vdot(b,b)).real for b in self.sigma_R_basis]
         return output
-
-    def round_coordinates(self, coordinates):
-        """Gives the integral rest.
-        Source: https://blog.openmined.org/ckks-explained-part-2-ckks-encoding-and-decoding/"""
-        coordinates = [c - floor(c) for c in coordinates]
-        return coordinates
-
-    def coordinate_wise_random_rounding(self, coordinates):
-        """Rounds coordinates randomly.
-        Source: https://blog.openmined.org/ckks-explained-part-2-ckks-encoding-and-decoding/"""
-        r = self.round_coordinates(coordinates)
-
-        f = [util.cust_rand(c) for c in r]
-        rounded_coordinates = [cc - ff for cc, ff in zip(coordinates, f)]
-        rounded_coordinates = [int(coeff) for coeff in rounded_coordinates]
-        return rounded_coordinates
         
     def sigma_R_discretization(self, z):
         """Projects a vector on the lattice using coordinate wise random rounding.
         Source: https://blog.openmined.org/ckks-explained-part-2-ckks-encoding-and-decoding/"""
         coordinates = self.compute_basis_coordinates(z)
         
-        rounded_coordinates = self.coordinate_wise_random_rounding(coordinates)
+        rounded_coordinates = util.coordinate_wise_random_rounding(coordinates)
         y = util.matmul(self.sigma_R_basis_T, rounded_coordinates)
-        y = [yy[0] for yy in y]
+        y = [yy[0] for yy in y] # "Flattens" the vector from the from [[1], [2], [3]] to [1, 2, 3]
         return y
     
     ##########

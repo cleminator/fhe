@@ -1,5 +1,5 @@
 import random
-
+from math import floor, ceil
 
 def transpose(matrix):
     rows = len(matrix)
@@ -31,14 +31,23 @@ def matmul(a, b):
 
     return result
 
-def cust_rand(c):
-    """Function used to generate a random value from [c, c-1] with probability distribution [c, c-1];
-    replaces np.random.choice([c, c-1], 1, p=[1-c, c])"""
-    rand = random.random()
-    if rand < 1 - c:
-        return c
-    else:
-        return 1 - c
+
+def coordinate_wise_random_rounding(coordinates):
+    """Rounds coordinates randomly.
+    Source: https://web.eecs.umich.edu/~cpeikert/pubs/toolkit.pdf"""
+
+    rounded_coordinates = []
+
+    for c in coordinates:
+        r = c - floor(c)  # Get integral rest (digits after decimal point)
+        rand = random.random()  # Random float between 0 and 1
+
+        if rand <= r:
+            rounded_coordinates.append(ceil(c))
+        else:
+            rounded_coordinates.append(floor(c))
+
+    return rounded_coordinates
 
 def gaussian_elimination(matrix, vector):
     """Simple solver for linear equation systems using gaussian elimination; not optimized"""

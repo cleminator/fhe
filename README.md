@@ -15,3 +15,4 @@ Therefore, while I will be implementing some commonly used optimization techniqu
 - Openmined Blog Series on CKKS (https://blog.openmined.org/ckks-explained-part-1-simple-encoding-and-decoding/)
 - LWE Toolkit (https://eprint.iacr.org/2013/293.pdf)
 - Sampling from Gaussian distributions (https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=4a3b8263ba0f8f8976499e7780e64decf2608412)
+- Notes on Lattices, HE, and CKKS (https://arxiv.org/pdf/2205.03511)
