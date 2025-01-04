@@ -1,7 +1,47 @@
-from enum import Enum
 import random
 
+
+def transpose(matrix):
+    rows = len(matrix)
+    cols = len(matrix[0])
+
+    transposed = [[] for _ in range(cols)]
+
+    for row in matrix:
+        for j, val in enumerate(row):
+            transposed[j].append(val)
+
+    return transposed
+
+def vdot(a, b):
+    if len(a) != len(b):
+        raise ValueError("Inputs must have the same length.")
+    return sum((x.conjugate() if isinstance(x, complex) else x) * y for x, y in zip(a, b))
+
+def matmul(a, b):
+    if len(a[0]) != len(b):
+        raise ValueError("Incompatible matrix dimensions for multiplication")
+    if not isinstance(b[0], list):
+        b = [[bb] for bb in b]
+    result = [[0] * len(b[0]) for _ in range(len(a))]
+    for i in range(len(a)):  # Iterate over rows of A
+        for j in range(len(b[0])):  # Iterate over columns of B
+            for k in range(len(b)):  # Iterate over rows of B (columns of A)
+                result[i][j] += a[i][k] * b[k][j]
+
+    return result
+
+def cust_rand(c):
+    """Function used to generate a random value from [c, c-1] with probability distribution [c, c-1];
+    replaces np.random.choice([c, c-1], 1, p=[1-c, c])"""
+    rand = random.random()
+    if rand < 1 - c:
+        return c
+    else:
+        return 1 - c
+
 def gaussian_elimination(matrix, vector):
+    """Simple solver for linear equation systems using gaussian elimination; not optimized"""
     n = len(matrix)
 
     # Ensure the vector supports complex numbers
@@ -35,6 +75,7 @@ def gaussian_elimination(matrix, vector):
 
 
 def findMultInv(a, n):
+    """Determine the multiplicative inverse of a number a mod n"""
     # Compute Extended Euclidian algorithm
     # a*x = 1 mod n
     # 1 = a*x + n*y = gcd(a, n)
@@ -42,6 +83,7 @@ def findMultInv(a, n):
     return x % n
 
 def extGCD(a, b):
+    """Extended euclidian algorithm, used mainly for determining mult inverse"""
     if b == 0:
         return a, 1, 0
     else:
@@ -51,6 +93,7 @@ def extGCD(a, b):
         return gcd, x, y
         
 def GCD(a, b):
+    """Greatest common divisor"""
     gcd, _, _ = extGCD(a, b)
     return gcd
 
@@ -63,16 +106,8 @@ def totient(m):
             count += 1
     return count
 
-def mod_exp(base, exp, mod):
-        result = 1
-        while exp > 0:
-            if exp % 2 == 1:  # If exp is odd
-                result = (result * base) % mod
-            base = (base * base) % mod
-            exp //= 2
-        return result
-
 def is_prime(n):
+    """Simple test whether a number is prime; not optimized"""
     if n <= 1:
         return False
     if n == 2:
@@ -87,6 +122,7 @@ def is_prime(n):
 
 
 def find_next_prime(n):
+    """Determines the next prime number after the number n; not optimized"""
     p = n
     if is_prime(p):
         return p
@@ -103,17 +139,15 @@ def find_next_prime(n):
         p+=2
 
 
-
-
-# Uniformly sample coefficients from Z_q
 def sample_uniform_coeffs(n, q):
+    """Uniformly sample coefficients from Z_q"""
     return [random.randint(round(-(q-1)/2), round((q-1)/2)) for i in range(0, n)]
 
-# Discrete gaussian distribution with variance sigma^2
 def sample_gaussian_coeffs(n, sigma=3.2):
+    """Discrete gaussian distribution with variance sigma^2"""
     return [abs(round(random.gauss(0, sigma**2))) for i in range(0, n)]
 
-# Uniform ternany distribution
 def sample_uniform_ternary_coeffs(n):
+    """Uniform ternary distribution"""
     return [random.choice([-1, 0, 1]) for i in range(0, n)]
 

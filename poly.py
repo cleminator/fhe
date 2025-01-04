@@ -11,18 +11,13 @@ class Polynomial:
     """
         
     def __init__(self, coeffs, q=None):
-        self.q = q
-        #self.delta = delta
-        #self.L = L
-        #self.q = q0 * delta**L
-        self.n = len(coeffs)
+        self.q = q #Optional modulus (encoded plaintexts do not have moduli, but ciphertexts do
+        self.n = len(coeffs) #Number of coefficients
         if q:
             self.coeffs = [self.mod(c) for c in coeffs]
         else:
             self.coeffs = coeffs
-        #print(q, self.q)
-        #if (2*self.n) % (q-1) != 0:
-        #    raise "2n must divide q-1 so that a 2nth primitive root of unity exists!"
+
     
     def __str__(self):
         """Return a string representation of the polynomial."""
@@ -36,50 +31,57 @@ class Polynomial:
     
     
     def mod(self, val):
+        """Modulo operation with representation between -q/2 and q/2
+        Source: https://eprint.iacr.org/2016/421.pdf Section 2.1 Basic"""
         z_mod_q = val % self.q
         if z_mod_q > self.q / 2:
             z_mod_q -= self.q
         return z_mod_q
     
     def rescale(self, ql):
+        """Operation to get rid of the extra scaling factor after multiplying two encoded polynomials
+        Source: https://eprint.iacr.org/2016/421.pdf Section 3.3"""
         self.coeffs = [math.floor(c / ql) for c in self.coeffs]
         self.q //= ql
     
     def mod_reduction(self, ql):
+        """Operation to scale down the modulus without scaling down the coefficients; used to even moduli of two ciphertexts on different levels before multiplication
+        Source: https://eprint.iacr.org/2016/421.pdf Section 3.3 "Homomorphic Operations of Ciphertexts at different levels"
+        """
         self.q //= ql
     
     
     def mod_exp(self, base, exp):
+        """ Simple modular exponentiation function"""
         if not self.q:
             raise Exception("No modulus defined!")
         result = 1
         while exp > 0:
             if exp % 2 == 1:  # If exp is odd
-                result = self.mod(result * base)# % self.q
-            base = self.mod(base * base)# % self.q
+                result = self.mod(result * base)
+            base = self.mod(base * base)
             exp //= 2
         return result
     
     ##################################################
 
     def solve(self, x):
+        """Simple functino to solve the polynomial for x (used in decoding procedure); no optimizations performed"""
         result = 0
         for i, coeff in enumerate(self.coeffs):
             result += coeff * (x ** i)
         return result
 
     def __add__(self, other):
+        """Adding coefficients of two polynomials"""
+
         from ciphertext import Ciphertext
         if isinstance(other, Ciphertext):
             return other + self
         
         max_len = max(self.n, other.n)
         result = [0] * max_len
-        
-        #if self.q != other.q:
-        #    print("Modulus q must be the same for both polynomials")
-        #    return None
-        
+
         for i in range(0, max_len):
             c1 = self.coeffs[i] if i < self.n else 0
             c2 = other.coeffs[i] if i < other.n else 0
@@ -89,15 +91,11 @@ class Polynomial:
         return Polynomial(result, self.q)
     
     def __sub__(self, other):
-        
+        """Subtracting coefficients of two polynomials"""
         
         max_len = max(self.n, other.n)
         result = [0] * max_len
-        
-        #if self.q != other.q:
-        #    print("Modulus q must be the same for both polynomials")
-        #    return None
-        
+
         for i in range(0, max_len):
             c1 = self.coeffs[i] if i < self.n else 0
             c2 = other.coeffs[i] if i < other.n else 0
@@ -107,12 +105,12 @@ class Polynomial:
         return Polynomial(result, self.q)
     
     def scalar_mult(self, scalar):
-        #res = self
+        """Multiplication of each coefficient with a constant"""
         cfs = [scalar * c for c in self.coeffs]
-        
         return Polynomial(cfs, self.q)
     
     def __mul__(self, other):
+        """Multiplication of two polynomials modulo (X^N +1); not optimized"""
         from ciphertext import Ciphertext
         if isinstance(other, Polynomial):
             return self.negacyclic_convolution(self, other)
@@ -124,15 +122,10 @@ class Polynomial:
             return NotImplemented
             #raise Exception("Only Poly-Poly or Poly-int multiplication is posssible")
 
-    #def __rmul__(self, other):
-    #    return self.__mul__(other)
 
     def negacyclic_convolution(self, poly1, poly2):
         """
-        Perform negacyclic convolution of two polynomials.
-        :param poly1: Polynomial object representing the first polynomial.
-        :param poly2: Polynomial object representing the second polynomial.
-        :return: Polynomial object representing the result of the negacyclic convolution.
+        Perform negacyclic convolution of two polynomials; Not yet FTT-based
         """
         n = len(poly1.coeffs)
         m = len(poly2.coeffs)
