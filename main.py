@@ -7,7 +7,7 @@ M = 2**3#32
 P = 2**75
 delta = 2**30 #128 -> delta
 q0 = delta * 2**6
-L = 2
+L = 4
 
 ckks = ckks.CKKS(M, P, q0, delta, L, 2)
 

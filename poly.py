@@ -41,7 +41,7 @@ class Polynomial:
     def rescale(self, ql):
         """Operation to get rid of the extra scaling factor after multiplying two encoded polynomials
         Source: https://eprint.iacr.org/2016/421.pdf Section 3.3"""
-        self.coeffs = [math.floor(c / ql) for c in self.coeffs]
+        self.coeffs = [(c // ql) for c in self.coeffs]
         self.q //= ql
     
     def mod_reduction(self, ql):
