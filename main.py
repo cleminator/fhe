@@ -3,19 +3,21 @@ import ckks
 import util
 
 
-M = 16
-P = 2**55
+M = 2**3#32
+P = 2**75
 delta = 2**30 #128 -> delta
 q0 = delta * 2**6
 L = 2
 
-ckks = ckks.CKKS(M, P, util.find_next_prime(q0), util.find_next_prime(delta), L, 2)
+ckks = ckks.CKKS(M, P, q0, delta, L, 2)
 
 pk, sk = ckks.keygen()
 evk = ckks.evkeygen(sk)
 
-m1 = [0.1, 0.2, 0.3, 0.4]
-m2 = [0.03, 0.04, 1, 1]
+#m1 = [0.1, 0.2, 0.3, 0.4]
+#m2 = [0.03, 0.04, 1, 1]
+m1 = [0.1]*(M//4)
+m2 = [0.03]*(M//4)
 
 print("m1: ", m1)
 print("m2: ", m2)

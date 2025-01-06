@@ -18,6 +18,7 @@ class CKKS:
         self.delta = delta # Scale mod
         self.L = L # Number of available levels
 
+
         self.sec_dist = sec_dist
         """Distribution used for secret key term s (all error terms e, e0, e1, v, u automatically use discrete gaussian)
         Source: https://eprint.iacr.org/2024/463.pdf """
