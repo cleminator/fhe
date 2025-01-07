@@ -3,21 +3,21 @@ import ckks
 import util
 
 
-M = 2**3#32
-P = 2**90
-delta = 2**30 #128 -> delta
+N = 2**8
+delta = 2**30
 q0 = delta * 2**6
-L = 3
+L = 4
+P = 2**90
 
-ckks = ckks.CKKS(M, P, q0, delta, L, 2)
+ckks = ckks.CKKS(N, P, q0, delta, L, 2)
 
 pk, sk = ckks.keygen()
 evk = ckks.evkeygen(sk)
 
 #m1 = [0.1, 0.2, 0.3, 0.4]
 #m2 = [0.03, 0.04, 1, 1]
-m1 = [0.1]*(M//4)
-m2 = [0.03]*(M//4)
+m1 = [0.1]*(N//2)
+m2 = [0.03]*(N//2)
 
 print("m1: ", m1)
 print("m2: ", m2)

@@ -6,9 +6,9 @@ import random
 
 
 class CKKS:
-    def __init__(self, m, P, q0, delta, L, sec_dist):
-        self.xi = e ** (2 * pi * 1j / m) # Used for encoding
-        self.m = m # Represents 2N
+    def __init__(self, N, P, q0, delta, L, sec_dist):
+        self.m = 2*N
+        self.xi = e ** (2 * pi * 1j / self.m)  # Used for encoding
         self.sigma_R_basis = self.create_sigma_R_basis() # used for encoding
         self.sigma_R_basis_T = util.transpose(self.sigma_R_basis) # precompute transposition
 
