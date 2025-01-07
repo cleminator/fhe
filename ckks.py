@@ -1,4 +1,4 @@
-from poly import Polynomial
+from poly import Polynomial, RNSPolynomial
 from ciphertext import Ciphertext
 import util
 from math import e, pi, floor, ceil
@@ -190,3 +190,52 @@ class CKKS:
         """Decrypts a ciphertext using the secret key and returns a plaintext polynomial
         Source: https://eprint.iacr.org/2016/421.pdf (Section 3.4)"""
         return c.b + (c.a * sk[1])
+
+
+class RNSCKKS(CKKS):
+    def __init__(self, N, B, C, q, sec_dist):
+        self.m = 2*N
+        self.xi = e ** (2 * pi * 1j / self.m)  # Used for encoding
+        self.sigma_R_basis = self.create_sigma_R_basis()  # used for encoding
+        self.sigma_R_basis_T = util.transpose(self.sigma_R_basis)  # precompute transposition
+
+        self.B = B[:]
+        self.C = C[:]
+        self.q = q # All moduli q_i should be as close to this q as possible, to reduce the approximation error during rescaling
+        # q will be used for the scaling during encoding and decoding
+        self.sec_dist = sec_dist
+
+    def sigma_inverse(self, vec):
+        """Encodes the vector b in a polynomial using an M-th root of unity.
+        Source: https://blog.openmined.org/ckks-explained-part-1-simple-encoding-and-decoding/"""
+        van = self.vandermonde()
+        coeffs = util.gaussian_elimination(van, vec)
+        #p = Polynomial(coeffs)
+        #p = RNSPolynomial(self.B, self.C, [x.real for x in coeffs])
+        return [c.real for c in coeffs]
+
+
+    def encode(self, vec):
+        """Encodes a vector by expanding it first to H, scale it, project it on the lattice of sigma(R), and performs sigma inverse.
+        Source: https://blog.openmined.org/ckks-explained-part-2-ckks-encoding-and-decoding/"""
+        vec = [complex(vv, 0) for vv in vec]  # Convert list of real numbers to complex numbers
+        pi_z = self.pi_inverse(vec)
+        scaled_pi_z = [self.q * z for z in pi_z]  # self.delta * pi_z
+        rounded_scaled_pi_z = self.sigma_R_discretization(scaled_pi_z)
+        p = self.sigma_inverse(rounded_scaled_pi_z)
+
+        coef = [round(x) for x in p]
+        #p = Polynomial(coef, self.qL())
+        p = RNSPolynomial(self.B, self.C, coef)
+        return p
+
+    def decode(self, p):
+        """Decodes a polynomial by removing the scale, evaluating on the roots, and project it on C^(N/2)
+        Source: https://blog.openmined.org/ckks-explained-part-2-ckks-encoding-and-decoding/"""
+        #rescaled_p = Polynomial([c / self.delta for c in p.coeffs])
+        rescaled_p = RNSPolynomial(p.B, p.C, [c / self.q for c in p.get_coeffs()])
+        z = self.sigma(rescaled_p)
+        pi_z = self.pi(z)
+        # Extract real parts of complex vector
+        pi_z = [c.real for c in pi_z]
+        return pi_z

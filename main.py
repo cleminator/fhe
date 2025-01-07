@@ -1,13 +1,40 @@
-from poly import Polynomial
+from poly import Polynomial, RNSPolynomial
 import ckks
 import util
 
 
-N = 2**8
-delta = 2**30
-q0 = delta * 2**6
-L = 4
+N = 2**2
+delta = 2**40
+q0 = delta * 2**7
+L = 3
 P = 2**90
+
+B = [5]
+C = [13, 17, 19, 23]
+
+rnsckks = ckks.RNSCKKS(N, B, C, 1000, 2)
+m1 = [0.1]*(N//2)
+m2 = [0.03]*(N//2)
+
+p1 = rnsckks.encode(m1)
+p2 = rnsckks.encode(m2)
+#p1 = RNSPolynomial(B, C, [-5, 15, 17, -1])
+#p2 = RNSPolynomial(B, C, [10, 20, 30, 40])
+
+print(p1)
+print(p2)
+
+print(rnsckks.decode(p1))
+print(rnsckks.decode(p2))
+
+#p3 = p2 * p1
+
+#p4 = p1 + p3
+#print(p3)
+#print(p4)
+
+
+exit()
 
 ckks = ckks.CKKS(N, P, q0, delta, L, 2)
 

@@ -97,7 +97,7 @@ class Ciphertext:
         evk = copy.deepcopy(other[1])
         
         # Check if levels are different between both ciphertexts
-        while(True):
+        while True:
             if c1.l > c2.l:
                 c1.mod_reduction()
             elif c1.l < other[0].l:
@@ -138,3 +138,6 @@ class Ciphertext:
         else:
             return NotImplemented
 
+
+class RNSCiphertext(Ciphertext):
+    pass

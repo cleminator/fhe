@@ -82,6 +82,13 @@ def gaussian_elimination(matrix, vector):
 
     return solution
 
+def mod(val, mod):
+    """Modulo operation with representation between -q/2 and q/2
+    Source: https://eprint.iacr.org/2016/421.pdf Section 2.1 Basic"""
+    z_mod_q = val % mod
+    if z_mod_q > mod / 2:
+        z_mod_q -= mod
+    return z_mod_q
 
 def findMultInv(a, n):
     """Determine the multiplicative inverse of a number a mod n"""
@@ -92,7 +99,9 @@ def findMultInv(a, n):
     return x % n
 
 def extGCD(a, b):
-    """Extended euclidian algorithm, used mainly for determining mult inverse"""
+    """Extended euclidian algorithm, used mainly for determining mult inverse
+    ax + by = gcd(a, b)
+    """
     if b == 0:
         return a, 1, 0
     else:

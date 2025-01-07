@@ -4,6 +4,7 @@ import util
 import math
 
 
+
 class Polynomial:
     """
     This class represents a polynomial of the integer polynomial ring Zq[X]/(X^N + 1)
@@ -31,12 +32,7 @@ class Polynomial:
     
     
     def mod(self, val):
-        """Modulo operation with representation between -q/2 and q/2
-        Source: https://eprint.iacr.org/2016/421.pdf Section 2.1 Basic"""
-        z_mod_q = val % self.q
-        if z_mod_q > self.q / 2:
-            z_mod_q -= self.q
-        return z_mod_q
+        return util.mod(val, self.q)
     
     def rescale(self, ql):
         """Operation to get rid of the extra scaling factor after multiplying two encoded polynomials
@@ -66,19 +62,13 @@ class Polynomial:
     ##################################################
 
     def solve(self, x):
-        """Simple functino to solve the polynomial for x (used in decoding procedure); no optimizations performed"""
+        """Simple function to solve the polynomial for x (used in decoding procedure); no optimizations performed"""
         result = 0
         for i, coeff in enumerate(self.coeffs):
             result += coeff * (x ** i)
         return result
 
-    def __add__(self, other):
-        """Adding coefficients of two polynomials"""
-
-        from ciphertext import Ciphertext
-        if isinstance(other, Ciphertext):
-            return other + self
-        
+    def add(self, other):
         max_len = max(self.n, other.n)
         result = [0] * max_len
 
@@ -87,12 +77,19 @@ class Polynomial:
             c2 = other.coeffs[i] if i < other.n else 0
             result[i] = c1 + c2
             if self.q:
-                result[i] = self.mod(result[i])# % self.q
+                result[i] = self.mod(result[i])  # % self.q
         return Polynomial(result, self.q)
-    
-    def __sub__(self, other):
-        """Subtracting coefficients of two polynomials"""
+
+    def __add__(self, other):
+        """Adding coefficients of two polynomials"""
+
+        from ciphertext import Ciphertext
+        if isinstance(other, Ciphertext):
+            return other + self
         
+        return self.add(other)
+
+    def sub(self, other):
         max_len = max(self.n, other.n)
         result = [0] * max_len
 
@@ -101,8 +98,12 @@ class Polynomial:
             c2 = other.coeffs[i] if i < other.n else 0
             result[i] = c1 - c2
             if self.q:
-                result[i] = self.mod(result[i])# % self.q
+                result[i] = self.mod(result[i])  # % self.q
         return Polynomial(result, self.q)
+
+    def __sub__(self, other):
+        """Subtracting coefficients of two polynomials"""
+        return self.sub(other)
     
     def scalar_mult(self, scalar):
         """Multiplication of each coefficient with a constant"""
@@ -120,7 +121,7 @@ class Polynomial:
             return other * self
         else:
             return NotImplemented
-            #raise Exception("Only Poly-Poly or Poly-int multiplication is posssible")
+            #raise Exception("Only Poly-Poly or Poly-int multiplication is possible")
 
 
     def negacyclic_convolution(self, poly1, poly2):
@@ -170,3 +171,166 @@ class Polynomial:
                 if self.mod_exp(i, n) == -1 or self.mod_exp(i, n) == self.q - 1:
                     return i
         raise "No 2nth root found"
+
+
+class RNSPolynomial(Polynomial):
+    # B: RNS base of P [p0, p1, ..., pk-1] (len(B) = k)
+    # C: RNS base of Q [q0, q1, ..., qL] (len(C) = L+1)
+    # limbs: list of RNS limbs, each limb i is a list of coeffs mod q_i
+
+    def __init__(self, B, C, coeffs=None):
+        self.B = B[:]
+        self.C = C[:]
+        self.limbs = []
+        self.n = 0
+        if coeffs:
+            self.create_limbs(coeffs[:])
+
+    def __str__(self):
+        strng = "".join(str(self.get_coeffs()))
+        strng += " (Q = " + str(self.get_Q()) + ")"
+        return strng
+
+
+    def get_coeffs(self):
+        coeffs = []
+
+        if len(self.C) == 1:
+            return self.C[0]
+        if len(self.C) == 0:
+            raise Exception("No limbs exist")
+
+        # x = l1*m2*n2 + l2*m1*n1
+
+        coeffs = [0]*len(self.limbs[0])
+        l1 = self.limbs[0]
+        q1 = self.C[0]
+
+        for i in range(1, len(self.C)):
+            _, m1, m2 = util.extGCD(q1, self.C[i])
+            for j in range(len(l1)):
+                coeffs[j] = util.mod(l1[j] * m2 * self.C[i] + self.limbs[i][j] * m1 * q1, self.get_Q())
+            l1 = coeffs
+            q1 = q1 * self.C[i]
+        return coeffs
+
+    def get_Q(self):
+        q = 1
+        for i in range(len(self.C)):
+            q *= self.C[i]
+        return q
+
+    ###########################################################################
+
+    def create_limbs(self, coeffs):
+        # Generate list of limbs from base (Q) and coefficients
+        self.n = len(coeffs[:])
+        for i in range(len(self.C)):
+            self.limbs.append([c % self.C[i] for c in coeffs[:]])
+
+
+    def set_limbs(self, limbs):
+        self.n = len(limbs[0])
+        self.limbs = limbs
+        return self
+
+    def conv(self, base1, base2):
+        # Convert limbs from basis1 (e.g. B) to basis2 (e.g. C)
+        pass
+
+    def mod_up(self):
+        pass
+
+    def mod_down(self):
+        pass
+
+    def solve(self, x):
+        """Simple function to solve the polynomial for x (used in decoding procedure); no optimizations performed"""
+        result = 0
+        for i, coeff in enumerate(self.get_coeffs()):
+            result += coeff * (x ** i)
+        return result
+
+    ######################################
+
+    def rescale(self):
+        pass
+
+    def mod_reduction(self):
+        self.limbs.pop()
+        self.C.pop()
+
+    ######################################
+
+    def __add__(self, other):
+        from ciphertext import RNSCiphertext
+        if isinstance(other, RNSCiphertext):
+            return other + self
+
+        if self.n != other.n:
+            raise Exception("Polynomials need to have equal ring dimension")
+
+
+        limbs = []
+        # zip() will stop at the end of the shortest list.
+        # If one poly is lower level, the result will therefore automatically be reduced to that level
+        for la, lb, q in zip(self.limbs, other.limbs, self.C):
+            lc = [0] * self.n
+            for i in range(self.n):
+                lc[i] = util.mod(la[i] + lb[i], q)
+            limbs.append(lc)
+        return RNSPolynomial(self.B, self.C[:len(limbs)]).set_limbs(limbs)
+
+    def __sub__(self, other):
+        if self.n != other.n:
+            raise Exception("Polynomials need to have equal ring dimension")
+
+        limbs = []
+        # zip() will stop at the end of the shortest list.
+        # If one poly is lower level, the result will therefore automatically be reduced to that level
+        for la, lb, q in zip(self.limbs, other.limbs, self.C):
+            lc = [0] * self.n
+            for i in range(self.n):
+                lc[i] = util.mod(la[i] - lb[i], q)
+            limbs.append(lc)
+        return RNSPolynomial(self.B, self.C[:len(limbs)]).set_limbs(limbs)
+
+    def scalar_mult(self, scalar):
+        limbs = []
+        for l, q in zip(self.limbs, self.C):
+            limbs.append([util.mod(scalar * c, q) for c in l])
+        return RNSPolynomial(self.B, self.C).set_limbs(limbs)
+
+    def negacyclic_convolution(self, poly1, poly2):
+        limbs = []
+        for la, lb, q in zip(poly1.limbs, poly2.limbs, poly1.C):
+            n = len(la)
+            m = len(lb)
+
+            if n != m:
+                raise ValueError("Negacyclic convolution requires polynomials of the same length.")
+
+            result = [0] * n
+
+            for i in range(n):
+                for j in range(n):
+                    index = (i + j) % n
+                    value = la[i] * lb[j]
+                    if i + j >= n:
+                        result[index] -= value # Negacyclic wraparound
+                    else:
+                        result[index] += value
+            limbs.append([util.mod(r, q) for r in result])
+        return RNSPolynomial(self.B, self.C).set_limbs(limbs)
+
+    def __mul__(self, other):
+        """Multiplication of two polynomials modulo (X^N +1); not optimized"""
+        from ciphertext import RNSCiphertext
+        if isinstance(other, Polynomial):
+            return self.negacyclic_convolution(self, other)
+        elif isinstance(other, int) or isinstance(other, float):
+            return self.scalar_mult(other)
+        elif isinstance(other, RNSCiphertext):
+            return other * self
+        else:
+            return NotImplemented
