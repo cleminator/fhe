@@ -97,10 +97,13 @@ class Ciphertext:
         evk = copy.deepcopy(other[1])
         
         # Check if levels are different between both ciphertexts
-        if c1.l > c2.l:
-            c1.mod_reduction()
-        elif self.l < other[0].l:
-            c2.mod_reduction()
+        while(True):
+            if c1.l > c2.l:
+                c1.mod_reduction()
+            elif c1.l < other[0].l:
+                c2.mod_reduction()
+            else:
+                break
 
         d0 = c1.b * c2.b
         d1 = c1.a * c2.b + c2.a * c1.b
@@ -116,7 +119,7 @@ class Ciphertext:
         cmult0 = d0 + b_with_evk
         cmult1 = d1 + a_with_evk
         
-        cmult = Ciphertext(cmult0, cmult1, self.P, self.q0, self.delta, self.l)
+        cmult = Ciphertext(cmult0, cmult1, c1.P, c1.q0, c1.delta, c1.l)
         cmult.rescale()
         return cmult
     

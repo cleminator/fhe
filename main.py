@@ -4,10 +4,10 @@ import util
 
 
 M = 2**3#32
-P = 2**75
+P = 2**90
 delta = 2**30 #128 -> delta
 q0 = delta * 2**6
-L = 4
+L = 3
 
 ckks = ckks.CKKS(M, P, q0, delta, L, 2)
 
@@ -38,8 +38,10 @@ c_add = c1 + c2
 c_add_const = c1 + p2
 c_sub = c1 - c2
 c_sub_const = c1 - p2
-c_mult = c1 * [c2, evk]
-c_mult_const = c1 * p2
+c_mult_const = c1 * p2 * p1
+c_mult = c1 * [c_mult_const, evk]
+
+print(c_mult)
 
 print("")
 print("e_add", ckks.decode(ckks.decrypt(c_add, sk)))
