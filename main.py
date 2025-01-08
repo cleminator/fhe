@@ -10,9 +10,18 @@ L = 3
 P = 2**90
 
 B = [5]
-C = [13, 17, 19, 23]
+#C = [13, 17, 19, 23]
+C = [1313041, 131071, 131063]
+#131072
 
-rnsckks = ckks.RNSCKKS(N, B, C, 1000, 2)
+#131041
+#131059
+#131063
+#131071
+#131101
+#131111
+
+rnsckks = ckks.RNSCKKS(N, B, C, 2**17, 2)
 m1 = [0.1]*(N//2)
 m2 = [0.03]*(N//2)
 
@@ -24,15 +33,16 @@ p2 = rnsckks.encode(m2)
 print(p1)
 print(p2)
 
-print(rnsckks.decode(p1))
-print(rnsckks.decode(p2))
+p3 = p1*p2
 
-#p3 = p2 * p1
+print("p1:", rnsckks.decode(p1))
+print("p2:", rnsckks.decode(p2))
+p3.rescale()
+print("p3=p1*p2:", rnsckks.decode(p3))
 
-#p4 = p1 + p3
-#print(p3)
-#print(p4)
-
+p4 = p3 * p1
+p4.rescale()
+print("p4=p3*p1:", rnsckks.decode(p4))
 
 exit()
 

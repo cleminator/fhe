@@ -196,7 +196,7 @@ class RNSPolynomial(Polynomial):
         coeffs = []
 
         if len(self.C) == 1:
-            return self.C[0]
+            return self.limbs[0]
         if len(self.C) == 0:
             raise Exception("No limbs exist")
 
@@ -254,7 +254,29 @@ class RNSPolynomial(Polynomial):
     ######################################
 
     def rescale(self):
-        pass
+        limbs_p = []
+        for lj, qj in zip(self.limbs, self.C):
+            #print("Limb: ", lj, qj)
+            limb = []
+            for i in range(self.n):
+                #print("i: ", i, lj[i], self.limbs[-1][i])
+                l = lj[i]-self.limbs[-1][i]
+                #print(l)
+                l = l * util.findMultInv(self.C[-1], qj) # // self.C[-1]
+                #print(l)
+                l = util.mod(l, qj)
+                #print(l)
+                limb.append(l)
+            #print(limb)
+            limbs_p.append(limb)
+        #print(self.limbs)
+        #print(limbs_p)
+
+
+        self.set_limbs(limbs_p)
+        self.limbs.pop()
+        self.C.pop()
+
 
     def mod_reduction(self):
         self.limbs.pop()
