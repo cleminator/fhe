@@ -21,7 +21,7 @@ C = [1313041, 131071, 131063]
 #131101
 #131111
 
-rnsckks = ckks.RNSCKKS(N, B, C, 2**17, 2)
+rnsckks = ckks.RNSCKKS(N, B, 40, 30, 2, 2)#C, 2**17, 2)
 m1 = [0.1]*(N//2)
 m2 = [0.03]*(N//2)
 
@@ -30,13 +30,14 @@ p2 = rnsckks.encode(m2)
 #p1 = RNSPolynomial(B, C, [-5, 15, 17, -1])
 #p2 = RNSPolynomial(B, C, [10, 20, 30, 40])
 
+print("p1, p2")
 print(p1)
 print(p2)
 
 p3 = p1*p2
 
-print("p1:", rnsckks.decode(p1))
-print("p2:", rnsckks.decode(p2))
+print("m'1:", rnsckks.decode(p1))
+print("m'2:", rnsckks.decode(p2))
 p3.rescale()
 print("p3=p1*p2:", rnsckks.decode(p3))
 

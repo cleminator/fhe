@@ -193,17 +193,27 @@ class CKKS:
 
 
 class RNSCKKS(CKKS):
-    def __init__(self, N, B, C, q, sec_dist):
+    def __init__(self, N, B, q0, q, L, sec_dist):#C, q, sec_dist):
         self.m = 2*N
         self.xi = e ** (2 * pi * 1j / self.m)  # Used for encoding
         self.sigma_R_basis = self.create_sigma_R_basis()  # used for encoding
         self.sigma_R_basis_T = util.transpose(self.sigma_R_basis)  # precompute transposition
 
         self.B = B[:]
-        self.C = C[:]
-        self.q = q # All moduli q_i should be as close to this q as possible, to reduce the approximation error during rescaling
+        self.C = self.generate_base_C(q0, q, L)#C[:]
+        self.q = 2**q # All moduli q_i should be as close to this q as possible, to reduce the approximation error during rescaling
         # q will be used for the scaling during encoding and decoding
         self.sec_dist = sec_dist
+
+    def generate_base_C(self, q0, q, L):
+        # q0 and q are bit sizes of the first and all subsequent moduli
+        C = [util.find_next_prime(2**q0)]
+        next_prime = 2**q
+        for i in range(L):
+            next_prime = util.find_next_prime(next_prime)
+            C.append(next_prime)
+            next_prime += 1
+        return C#[1048583, 32771, 32779]#C
 
     def sigma_inverse(self, vec):
         """Encodes the vector b in a polynomial using an M-th root of unity.
@@ -233,7 +243,7 @@ class RNSCKKS(CKKS):
         """Decodes a polynomial by removing the scale, evaluating on the roots, and project it on C^(N/2)
         Source: https://blog.openmined.org/ckks-explained-part-2-ckks-encoding-and-decoding/"""
         #rescaled_p = Polynomial([c / self.delta for c in p.coeffs])
-        rescaled_p = RNSPolynomial(p.B, p.C, [c / self.q for c in p.get_coeffs()])
+        rescaled_p = Polynomial([c / self.q for c in p.get_coeffs()])
         z = self.sigma(rescaled_p)
         pi_z = self.pi(z)
         # Extract real parts of complex vector
