@@ -2,7 +2,7 @@ from poly import Polynomial, RNSPolynomial
 from ciphertext import Ciphertext
 import util
 from math import e, pi, floor, ceil
-import random
+import numpy as np
 
 
 class CKKS:
@@ -29,7 +29,7 @@ class CKKS:
 
 
     def vandermonde(self):
-        """Computes the Vandermonde matrix from a m-th root of unity.
+        """Computes the Vandermonde matrix from an m-th root of unity.
         Source: https://blog.openmined.org/ckks-explained-part-1-simple-encoding-and-decoding/"""
         n = self.m // 2
         matrix = []
@@ -70,7 +70,8 @@ class CKKS:
         """Encodes the vector b in a polynomial using an M-th root of unity.
         Source: https://blog.openmined.org/ckks-explained-part-1-simple-encoding-and-decoding/"""
         van = self.vandermonde()
-        coeffs = util.gaussian_elimination(van, vec)
+        #coeffs = util.gaussian_elimination(van, vec)
+        coeffs = np.linalg.solve(van, vec)
         p = Polynomial(coeffs)
         return p
     
@@ -154,7 +155,7 @@ class CKKS:
         sk = (1, s)
         pk = (b, a)
         
-        return (pk, sk)
+        return pk, sk
     
 
     def evkeygen(self, sk):
@@ -193,16 +194,18 @@ class CKKS:
 
 
 class RNSCKKS(CKKS):
-    def __init__(self, N, B, q0, q, L, sec_dist):#C, q, sec_dist):
+    def __init__(self, N, p, q0, q, L, sec_dist):#C, q, sec_dist):
         self.m = 2*N
         self.xi = e ** (2 * pi * 1j / self.m)  # Used for encoding
         self.sigma_R_basis = self.create_sigma_R_basis()  # used for encoding
         self.sigma_R_basis_T = util.transpose(self.sigma_R_basis)  # precompute transposition
 
-        self.B = B[:]
+        self.B = []
+        self.p = p
         self.C = self.generate_base_C(q0, q, L)#C[:]
         self.q = 2**q # All moduli q_i should be as close to this q as possible, to reduce the approximation error during rescaling
         # q will be used for the scaling during encoding and decoding
+
         self.sec_dist = sec_dist
 
     def generate_base_C(self, q0, q, L):
@@ -210,10 +213,18 @@ class RNSCKKS(CKKS):
         C = [util.find_next_prime(2**q0)]
         next_prime = 2**q
         for i in range(L):
-            next_prime = util.find_next_prime(next_prime)
-            C.append(next_prime)
-            next_prime += 1
-        return C#[1048583, 32771, 32779]#C
+            while True:
+                next_prime = util.find_next_prime(next_prime)
+                # Check if the prime number satisfies qj=1 mod 2N
+                # -> guarantees the existence of a 2Nth primitive root for NTT
+                if util.mod(next_prime, self.m) == 1:
+                    C.append(next_prime)
+                    next_prime += 1
+                    break
+                else:
+                    next_prime += 1
+        print(C)
+        return C
 
     def sigma_inverse(self, vec):
         """Encodes the vector b in a polynomial using an M-th root of unity.

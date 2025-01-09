@@ -44,8 +44,11 @@ class Ciphertext:
     def add_ciph(self, other):
         """Addition of ciphertext + ciphertext
         Source: https://eprint.iacr.org/2016/421.pdf (Section 3.4)"""
+        print("Adding b")
         b = self.b + other.b
+        print("Adding a")
         a = self.a + self.a
+        print("done")
         return Ciphertext(b, a, self.P, self.q0, self.delta, self.l)
     
     def __add__(self, other):
