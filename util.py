@@ -151,10 +151,38 @@ def find_next_prime(n):
         p+=2
     
     #Now loop through every odd number to check for primality
-    while(True):
+    while True:
         if is_prime(p):
             return p
         p+=2
+
+def mod_exp(base, exp, q):
+    """ Simple modular exponentiation function"""
+    if not q:
+        raise Exception("No modulus defined!")
+    result = 1
+    while exp > 0:
+        if exp % 2 == 1:  # If exp is odd
+            result = mod(result * base, q)
+        base = mod(base * base, q)
+        exp //= 2
+    return result
+
+def find_primitive_nth_root_of_unity(n, q):
+    while True:
+        x = random.randint(1, q - 1)
+        g = mod_exp(x, (q - 1) / n, q)
+        if mod_exp(g, n / 2, q) != 1:
+            return g
+
+def find_2nth_root_of_unity(n, q):
+    omega = find_primitive_nth_root_of_unity(n, q)
+    for i in range(1, q):
+        if mod_exp(i, 2, q) == omega:
+            if mod_exp(i, n, q) == -1 or mod_exp(i, n, q) == q - 1:
+                return i
+    raise Exception("No 2nth root found for n=" + str(n) + " and q=" + str(q))
+
 
 
 def sample_uniform_coeffs(n, q):

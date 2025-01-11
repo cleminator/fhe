@@ -1,4 +1,6 @@
 import random
+
+import ntt
 #import ntt
 import util
 import math
@@ -47,17 +49,7 @@ class Polynomial:
         self.q //= ql
     
     
-    def mod_exp(self, base, exp):
-        """ Simple modular exponentiation function"""
-        if not self.q:
-            raise Exception("No modulus defined!")
-        result = 1
-        while exp > 0:
-            if exp % 2 == 1:  # If exp is odd
-                result = self.mod(result * base)
-            base = self.mod(base * base)
-            exp //= 2
-        return result
+
     
     ##################################################
 
@@ -154,23 +146,28 @@ class Polynomial:
     ##################################################
     
         
-    def find_primitive_nth_root_of_unity(self, n):
-        while True:
-            x = random.randint(1, self.q - 1)
-            g = self.mod_exp(x, (self.q - 1) / n)
-            if self.mod_exp(g, n / 2) != 1:
-                return g
-    
 
-    def find_2nth_root_of_unity(self, n):
-        #print("2nth root")
-        omega = self.find_primitive_nth_root_of_unity(n)
-        #print(omega)
-        for i in range(1, self.q):
-            if self.mod_exp(i, 2) == omega:
-                if self.mod_exp(i, n) == -1 or self.mod_exp(i, n) == self.q - 1:
-                    return i
-        raise "No 2nth root found"
+
+
+class RNSLimb:
+    def __init__(self, coeffs, q, root):
+        self.coeffs = coeffs
+        self.q = q
+        self.root = root
+    def __getitem__(self, item):
+        return self.coeffs[item]
+    def __setitem__(self, key, value):
+        self.coeffs[key] = value
+    def __iter__(self):
+        for c in self.coeffs:
+            yield c
+    def __len__(self):
+        return len(self.coeffs)
+    def __str__(self):
+        strng = "".join(str(self.coeffs))
+        strng += " (Modulus: " + str(self.q) + ", Root: " + str(self.root) + ")"
+        return strng
+
 
 
 class RNSPolynomial(Polynomial):
@@ -178,22 +175,31 @@ class RNSPolynomial(Polynomial):
     # C: RNS base of Q [q0, q1, ..., qL] (len(C) = L+1)
     # limbs: list of RNS limbs, each limb i is a list of coeffs mod q_i
 
-    def __init__(self, B, C, coeffs=None):
+    def __init__(self, B, C, roots, is_ntt=False, coeffs=None):
         self.B = B[:]
         self.C = C[:]
+        self.roots = roots
         self.limbs = []
+
         self.n = 0
+        self.ntt_domain = is_ntt
         if coeffs:
             self.create_limbs(coeffs[:])
+            if not is_ntt:
+                self.convert_RNS_to_NTT()
+                self.ntt_domain = True
+
+
 
     def __str__(self):
         strng = "".join(str(self.get_coeffs()))
-        strng += " (Q = " + str(self.get_Q()) + ")"
+        strng += " (Modulus = " + str(self.get_modulus()) + ")"
+        if self.ntt_domain:
+            strng += " (NTT)"
         return strng
 
 
     def get_coeffs(self):
-        coeffs = []
 
         if len(self.C) == 1:
             return self.limbs[0]
@@ -209,15 +215,15 @@ class RNSPolynomial(Polynomial):
         for i in range(1, len(self.C)):
             _, m1, m2 = util.extGCD(q1, self.C[i])
             for j in range(len(l1)):
-                coeffs[j] = util.mod(l1[j] * m2 * self.C[i] + self.limbs[i][j] * m1 * q1, self.get_Q())
+                coeffs[j] = util.mod(l1[j] * m2 * self.C[i] + self.limbs[i][j] * m1 * q1, self.get_modulus())
             l1 = coeffs
             q1 = q1 * self.C[i]
         return coeffs
 
-    def get_Q(self):
+    def get_modulus(self):
         q = 1
-        for i in range(len(self.C)):
-            q *= self.C[i]
+        for l in self.limbs:#range(len(self.C)):
+            q *= l.q#self.C[i]
         return q
 
     ###########################################################################
@@ -226,13 +232,35 @@ class RNSPolynomial(Polynomial):
         # Generate list of limbs from base (Q) and coefficients
         self.n = len(coeffs[:])
         for i in range(len(self.C)):
-            self.limbs.append([c % self.C[i] for c in coeffs[:]])
+            l = RNSLimb([c % self.C[i] for c in coeffs[:]], self.C[i], self.roots[self.C[i]])
+            self.limbs.append(l) #[c % self.C[i] for c in coeffs[:]])
 
+        if not self.ntt_domain:
+            self.convert_RNS_to_NTT()
+            self.ntt_domain = True
 
     def set_limbs(self, limbs):
         self.n = len(limbs[0])
         self.limbs = limbs
+        if not self.ntt_domain:
+            self.convert_RNS_to_NTT()
         return self
+
+    ###########################################################################
+
+    ## These functions will transform each of the limbs to and from NTT domain
+
+    def convert_RNS_to_NTT(self):
+        for l in self.limbs:
+            l.coeffs = ntt.ntt_psi(l.coeffs, self.n, l.q, l.root)
+        self.ntt_domain = True
+
+    def convert_NTT_to_RNS(self):
+        for l in self.limbs:
+            l.coeffs = ntt.intt_psi(l.coeffs, self.n, l.q, l.root)
+        self.ntt_domain = False
+
+    ###########################################################################
 
     def conv(self, base1, base2):
         # Convert limbs from basis1 (e.g. B) to basis2 (e.g. C)
@@ -254,6 +282,15 @@ class RNSPolynomial(Polynomial):
     ######################################
 
     def rescale(self):
+        for l in self.limbs:
+            limb = []
+            for i in range(self.n):
+                lp = l[i] - self.limbs[-1][i]
+                lp = lp * util.findMultInv(self.limbs[-1].q, l.q)
+                lp = util.mod(lp, l.q)
+                limb.append(lp)
+            l.coeffs = limb
+        """
         limbs_p = []
         for lj, qj in zip(self.limbs, self.C):
             #print("Limb: ", lj, qj)
@@ -268,12 +305,11 @@ class RNSPolynomial(Polynomial):
                 #print(l)
                 limb.append(l)
             #print(limb)
-            limbs_p.append(limb)
+            limbs_p.append(RNSLimb(limb, ))
         #print(self.limbs)
         #print(limbs_p)
-
-
-        self.set_limbs(limbs_p)
+        """
+        #self.set_limbs(limbs_p)
         self.limbs.pop()
         self.C.pop()
 
@@ -300,8 +336,8 @@ class RNSPolynomial(Polynomial):
             lc = [0] * self.n
             for i in range(self.n):
                 lc[i] = util.mod(la[i] + lb[i], q)
-            limbs.append(lc)
-        return RNSPolynomial(self.B, self.C[:len(limbs)]).set_limbs(limbs)
+            limbs.append(RNSLimb(lc, la.q, la.root))#lc)
+        return RNSPolynomial(self.B, self.C[:len(limbs)], self.roots, self.ntt_domain).set_limbs(limbs)
 
     def __sub__(self, other):
         if self.n != other.n:
@@ -314,36 +350,36 @@ class RNSPolynomial(Polynomial):
             lc = [0] * self.n
             for i in range(self.n):
                 lc[i] = util.mod(la[i] - lb[i], q)
-            limbs.append(lc)
-        return RNSPolynomial(self.B, self.C[:len(limbs)]).set_limbs(limbs)
+            limbs.append(RNSLimb(lc, la.q, la.root))#lc)
+        return RNSPolynomial(self.B, self.C[:len(limbs)], self.roots, self.ntt_domain).set_limbs(limbs)
 
     def scalar_mult(self, scalar):
         limbs = []
         for l, q in zip(self.limbs, self.C):
-            limbs.append([util.mod(scalar * c, q) for c in l])
-        return RNSPolynomial(self.B, self.C).set_limbs(limbs)
+            limbs.append(RNSLimb([util.mod(scalar * c, q) for c in l], l.q, l.root))
+        return RNSPolynomial(self.B, self.C, self.roots, self.ntt_domain).set_limbs(limbs)
 
     def negacyclic_convolution(self, poly1, poly2):
         limbs = []
-        for la, lb, q in zip(poly1.limbs, poly2.limbs, poly1.C):
+        for la, lb in zip(poly1.limbs, poly2.limbs):
             n = len(la)
             m = len(lb)
 
             if n != m:
                 raise ValueError("Negacyclic convolution requires polynomials of the same length.")
 
+            #if not poly1.ntt_domain:
+            #    poly1.convert_RNS_to_NTT()
+            #if not poly2.ntt_domain:
+            #    poly2.convert_RNS_to_NTT()
+
             result = [0] * n
 
-            for i in range(n):
-                for j in range(n):
-                    index = (i + j) % n
-                    value = la[i] * lb[j]
-                    if i + j >= n:
-                        result[index] -= value # Negacyclic wraparound
-                    else:
-                        result[index] += value
-            limbs.append([util.mod(r, q) for r in result])
-        return RNSPolynomial(self.B, self.C).set_limbs(limbs)
+            for i in range(self.n):
+                result[i] = la[i] * lb[i]
+
+            limbs.append(RNSLimb([util.mod(r, la.q) for r in result], la.q, la.root))
+        return RNSPolynomial(poly1.B, poly1.C, poly1.roots, poly1.ntt_domain).set_limbs(limbs)
 
     def __mul__(self, other):
         """Multiplication of two polynomials modulo (X^N +1); not optimized"""
