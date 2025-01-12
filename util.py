@@ -179,7 +179,8 @@ def find_2nth_root_of_unity(n, q):
     omega = find_primitive_nth_root_of_unity(n, q)
     for i in range(1, q):
         if mod_exp(i, 2, q) == omega:
-            if mod_exp(i, n, q) == -1 or mod_exp(i, n, q) == q - 1:
+            exp = mod_exp(i, n, q)
+            if exp == -1 or exp == q - 1:
                 return i
     raise Exception("No 2nth root found for n=" + str(n) + " and q=" + str(q))
 

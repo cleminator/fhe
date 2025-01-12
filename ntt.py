@@ -34,25 +34,27 @@ def ntt_psi(coeffs, n, q, root2n):#, q, root2n):
     a_hat = []
 
     for j in range(0, n):
+        #print("j:", j)
         aj = 0
         for i in range(0, n):
-            aj += root2n**(2*i*j+i) * coeffs[i]
-        a_hat.append(aj % q)
+            #print("i:", i)
+            aj += util.mod_exp(root2n, 2*i*j+i, q) * coeffs[i]#root2n**(2*i*j+i) * coeffs[i]
+        a_hat.append(util.mod(aj, q))
     return a_hat#Polynomial(a_hat, q)
 
 def intt_psi(coeffs, n, q, root2n):#, q, root2n):
     #print("START")
     a = []
-    #root2n = a_hat.find_2nth_root_of_unity(a_hat.n)
     inv_n = util.findMultInv(n, q)
-    #print(inv_n)
     inv_root2n = util.findMultInv(root2n, q)
-    #print(inv_root2n)
+
     for i in range(0, n):
+        #print("i:", i)
         ai = 0
         for j in range(0, n):
-            tmp = inv_root2n**(2*i*j+i) % q
-            ai += (tmp * coeffs[j]) % q
+            #print("j:", j)
+            tmp = util.mod_exp(inv_root2n, 2*i*j+i, q)
+            ai += util.mod((tmp * coeffs[j]), q)
         ai %= q
         ai *= inv_n
         a.append(ai % q)

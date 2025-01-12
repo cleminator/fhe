@@ -109,6 +109,7 @@ class CKKS:
     def encode(self, vec):
         """Encodes a vector by expanding it first to H, scale it, project it on the lattice of sigma(R), and performs sigma inverse.
         Source: https://blog.openmined.org/ckks-explained-part-2-ckks-encoding-and-decoding/"""
+
         vec = [complex(vv, 0) for vv in vec] #Convert list of real numbers to complex numbers
         pi_z = self.pi_inverse(vec)
         scaled_pi_z = [self.delta * z for z in pi_z] #self.delta * pi_z
@@ -216,7 +217,6 @@ class RNSCKKS(CKKS):
 
         self.roots = {} #Will contain a map of modulus->root for each q and p
         self.generate_roots()
-
         self.sec_dist = sec_dist
 
     def qL(self):
@@ -275,8 +275,8 @@ class RNSCKKS(CKKS):
         """Decodes a polynomial by removing the scale, evaluating on the roots, and project it on C^(N/2)
         Source: https://blog.openmined.org/ckks-explained-part-2-ckks-encoding-and-decoding/"""
         #rescaled_p = Polynomial([c / self.delta for c in p.coeffs])
-        pcopy = RNSPolynomial(p.B, p.C, p.roots, p.ntt_domain)
-        pcopy.set_limbs(p.limbs)
+        pcopy = RNSPolynomial(p.B[:], p.C[:], p.roots, p.ntt_domain)
+        pcopy.set_limbs(p.limbs[:])
         if pcopy.ntt_domain:
             pcopy.convert_NTT_to_RNS()
         rescaled_p = Polynomial([c / self.q for c in pcopy.get_coeffs()])

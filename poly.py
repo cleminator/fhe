@@ -1,10 +1,8 @@
-import random
 
 import ntt
-#import ntt
 import util
 import math
-
+from copy import copy
 
 
 class Polynomial:
@@ -154,6 +152,8 @@ class RNSLimb:
         self.coeffs = coeffs
         self.q = q
         self.root = root
+    def __copy__(self):
+        return RNSLimb(self.coeffs[:], self.q, self.root)
     def __getitem__(self, item):
         return self.coeffs[item]
     def __setitem__(self, key, value):
@@ -185,9 +185,7 @@ class RNSPolynomial(Polynomial):
         self.ntt_domain = is_ntt
         if coeffs:
             self.create_limbs(coeffs[:])
-            if not is_ntt:
-                self.convert_RNS_to_NTT()
-                self.ntt_domain = True
+
 
 
 
@@ -241,7 +239,7 @@ class RNSPolynomial(Polynomial):
 
     def set_limbs(self, limbs):
         self.n = len(limbs[0])
-        self.limbs = limbs
+        self.limbs = [copy(l) for l in limbs[:]] #limbs[:]]
         if not self.ntt_domain:
             self.convert_RNS_to_NTT()
         return self
