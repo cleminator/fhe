@@ -175,7 +175,12 @@ def find_primitive_nth_root_of_unity(n, q):
         if mod_exp(g, n / 2, q) != 1:
             return g
 
-def find_2nth_root_of_unity(n, q):
+def find_2nth_root_of_unity(N, q):
+    root2n =  find_primitive_nth_root_of_unity(2*N, q)
+    return root2n
+
+
+"""def find_2nth_root_of_unity(n, q):
     omega = find_primitive_nth_root_of_unity(n, q)
     for i in range(1, q):
         if mod_exp(i, 2, q) == omega:
@@ -183,7 +188,7 @@ def find_2nth_root_of_unity(n, q):
             if exp == -1 or exp == q - 1:
                 return i
     raise Exception("No 2nth root found for n=" + str(n) + " and q=" + str(q))
-
+"""
 
 
 def sample_uniform_coeffs(n, q):

@@ -5,8 +5,8 @@ import util
 from timeit import default_timer as timer
 
 N = 2**2
-q = 23
-q0 = 25
+q = 30
+q0 = 40
 L = 4
 k = 1
 #P = 2**90
