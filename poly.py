@@ -187,8 +187,6 @@ class RNSPolynomial(Polynomial):
             self.create_limbs(coeffs[:])
 
 
-
-
     def __str__(self):
         strng = "".join(str(self.get_coeffs()))
         strng += " (Modulus = " + str(self.get_modulus()) + ")"
@@ -230,6 +228,7 @@ class RNSPolynomial(Polynomial):
         # Generate list of limbs from base (Q) and coefficients
         self.n = len(coeffs[:])
         for i in range(len(self.C)):
+            #print("Generating limb", i)
             l = RNSLimb([c % self.C[i] for c in coeffs[:]], self.C[i], self.roots[self.C[i]])
             self.limbs.append(l) #[c % self.C[i] for c in coeffs[:]])
 
@@ -250,6 +249,7 @@ class RNSPolynomial(Polynomial):
 
     def convert_RNS_to_NTT(self):
         for l in self.limbs:
+            #print("Converting to NTT limb")
             l.coeffs = ntt.ntt_psi(l.coeffs, self.n, l.q, l.root)
         self.ntt_domain = True
 

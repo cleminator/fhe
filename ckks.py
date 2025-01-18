@@ -201,14 +201,17 @@ class RNSCKKS(CKKS):
         self.C = []
         self.m = 2*N
         self.xi = e ** (2 * pi * 1j / self.m)  # Used for encoding
+        #print("Create sigma_R_basis")
         self.sigma_R_basis = self.create_sigma_R_basis()  # used for encoding
         self.sigma_R_basis_T = util.transpose(self.sigma_R_basis)  # precompute transposition
 
         self.k = k
         self.p = 2**p
+        #print("Create B")
         self.B = self.generate_basis(p, k)
 
         self.L = L
+        #print("Create C")
         self.C = self.generate_basis(q0, 1)
         self.C += self.generate_basis(q, L) #self.generate_base_C(q0, q, L)
         self.q = 2**q # All moduli q_i should be as close to this q as possible, to reduce the approximation error during rescaling
@@ -216,6 +219,7 @@ class RNSCKKS(CKKS):
         # q will be used for the scaling during encoding and decoding
 
         self.roots = {} #Will contain a map of modulus->root for each q and p
+        #print("Create roots")
         self.generate_roots()
         self.sec_dist = sec_dist
 
@@ -302,10 +306,13 @@ class RNSCKKS(CKKS):
                 s_c = util.sample_uniform_ternary_coeffs(self.m // 2)
         #s = RNSPolynomial(self.B, self.C, self.roots, coeffs=s_c)s
         #a = RNSPolynomial(self.B, self.C, self.roots, coeffs=util.sample_uniform_coeffs(self.m // 2, self.qL()))
+        #print("Sampling")
         s = RNSPolynomial(self.B, self.C, self.roots, coeffs=[1]*(self.m // 2))
         a = RNSPolynomial(self.B, self.C, self.roots, coeffs=[1]*(self.m // 2))
         e = RNSPolynomial(self.B, self.C, self.roots, coeffs=util.sample_gaussian_coeffs(self.m // 2))
+        #print("Mult poly")
         b = a * s
+        #print("mult const")
         b = b * -1
         #b = b + e
 

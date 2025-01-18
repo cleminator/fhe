@@ -180,17 +180,6 @@ def find_2nth_root_of_unity(N, q):
     return root2n
 
 
-"""def find_2nth_root_of_unity(n, q):
-    omega = find_primitive_nth_root_of_unity(n, q)
-    for i in range(1, q):
-        if mod_exp(i, 2, q) == omega:
-            exp = mod_exp(i, n, q)
-            if exp == -1 or exp == q - 1:
-                return i
-    raise Exception("No 2nth root found for n=" + str(n) + " and q=" + str(q))
-"""
-
-
 def sample_uniform_coeffs(n, q):
     """Uniformly sample coefficients from Z_q"""
     return [random.randint(round(-(q-1)/2), round((q-1)/2)) for i in range(0, n)]
