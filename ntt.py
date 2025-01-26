@@ -37,52 +37,70 @@ def intt_psi(coeffs, n, q, root2n):#, q, root2n):
 
 #############################
 
-def bit_reverse_copy(a):
+def bit_reverse(x, n):
+    return int(''.join(reversed(bin(x)[2:].zfill(n))), 2)
 
+def generate_psi_rev(n, q, psi):
+    num_bits = n.bit_length() - 1  # Number of bits needed to represent n-1
+    psi_powers = [(pow(psi, i, q)) for i in range(n)]  # Powers of ψ modulo q
+    psi_rev = [0] * n  # Initialize the Ψrev table
+
+    # Populate Ψrev with bit-reversed indices
+    for i in range(n):
+        reversed_index = bit_reverse(i, num_bits)
+        psi_rev[reversed_index] = psi_powers[i]
+
+    return psi_rev
+
+###########
+
+# Fast NTT/INTT implemented after algorithms 1 and 2 in https://eprint.iacr.org/2016/504.pdf
+
+def fast_ntt(a, q, psi):
+    a = a[:]
     n = len(a)
-    A = [0] * n  # Initialize an array of size n with zeros
-
-    def rev(k, bits):
-        """Compute the bit-reversed value of k for a given number of bits."""
-        result = 0
-        for _ in range(bits):
-            result = (result << 1) | (k & 1)
-            k >>= 1
-        return result
-
-    bits = n.bit_length() - 1  # Number of bits needed for indices in [0, n-1]
-    for k in range(n):
-        A[rev(k, bits)] = a[k]
-
-    return A
-
-def fast_ntt(a, n, q, root2n, s=1):
-    # Using Cooley-Tukey Algorithm (taken from https://eprint.iacr.org/2024/585.pdf)
-
-    if n == 1:
-        return a
-    else:
-        #a_hat = []
-        root_sq = util.mod_exp(root2n, 2, q)
-        a_even = a[::2]
-        a_odd = a[1::2]
-
-        b_even = fast_ntt(a_even, n//2, q, root_sq, 2*s)
-        b_odd = fast_ntt(a_odd, n//2, q, root_sq, 2*s)
-
-        b = [0]*n
-        #rk = 1
-
-        for k in range(n // 2):
-            rk = util.mod_exp(root2n, 2*k+1, q)
-            t = util.mod(rk * b_odd[k], q)
-            b[k] = util.mod(b_even[k] + t, q)
-            b[k + n//2] = util.mod(b_even[k] - t, q)
-
-            #rk = util.mod(rk * root2n, q)
-
-        return b
+    t = n
+    psi_rev = generate_psi_rev(n, q, psi)
+    m = 1
+    while m < n:
+        t = t//2
+        for i in range(m):
+            j1 = 2 * i * t
+            j2 = j1 + t - 1
+            S = psi_rev[m+i]
+            for j in range(j1, j2+1):
+                U = a[j]
+                V = a[j+t] * S
+                a[j] = util.mod(U + V, q)
+                a[j+t] = util.mod(U - V, q)
+        m *= 2
+    return a
 
 
+def fast_intt(a, q, psi):
+    a = a[:]
+    n = len(a)
+    t = 1
+    psi_inv_rev = generate_psi_rev(n, q, util.findMultInv(psi, q))
+    inv_n = util.findMultInv(n, q)
 
+    m = n
+    while m > 1:
+        j1 = 0
+        h = m//2
+        for i in range(h):
+            j2 = j1 + t - 1
+            S = psi_inv_rev[h + i]
+            for j in range(j1, j2+1):
+                U = a[j]
+                V = a[j+t]
+                a[j] = util.mod(U + V, q)
+                a[j+t] = util.mod((U - V) * S, q)
+            j1 = j1 + 2*t
+        t = 2*t
+        m //= 2
 
+    for j in range(n):
+        a[j] = util.mod(a[j] * inv_n, q)
+
+    return a

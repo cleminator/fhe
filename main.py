@@ -4,29 +4,7 @@ from ntt import ntt_psi, intt_psi, fast_ntt, fast_intt
 import util
 from timeit import default_timer as timer
 
-n = 2**2
-coeffs = [1, 2, 3, 4]#, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8]
 
-q = 7681
-#root2n = 1925
-root2n = util.find_2nth_root_of_unity(n, q) #1925
-
-start = timer()
-ntt = ntt_psi(coeffs, n, q, root2n)
-print("Time: ", (timer() - start)*10**6)
-start = timer()
-fastntt = fast_ntt(coeffs, n, q, root2n)
-print("Time: ", (timer() - start)*10**6)
-print("NTT: ", ntt)
-print("FTT: ", fastntt)
-intt = intt_psi(ntt, n, q, root2n)
-print(intt)
-intt2 = fast_intt(ntt, n, q, root2n)
-print(intt2)
-
-exit()
-
-"""
 
 N = 2**6
 q = 30
@@ -71,7 +49,7 @@ print("p4=p3*p2:", rnsckks.decode(p4))
 
 p5 = p3 * p1
 p5.rescale()
-print("p5=p4*p1:", rnsckks.decode(p5))
+print("p5=p3*p1:", rnsckks.decode(p5))
 
 #c1 = rnsckks.encrypt(p1, pk)
 #c2 = rnsckks.encrypt(p2, pk)
@@ -138,5 +116,5 @@ print("e_sub_const", ckks.decode(ckks.decrypt(c_sub_const, sk)))
 print("e_mult", ckks.decode(ckks.decrypt(c_mult, sk)))
 print("e_mult_const", ckks.decode(ckks.decrypt(c_mult_const, sk)))
 
-
+"""
 

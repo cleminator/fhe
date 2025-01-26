@@ -250,12 +250,12 @@ class RNSPolynomial(Polynomial):
     def convert_RNS_to_NTT(self):
         for l in self.limbs:
             #print("Converting to NTT limb")
-            l.coeffs = ntt.ntt_psi(l.coeffs, self.n, l.q, l.root)
+            l.coeffs = ntt.fast_ntt(l.coeffs, l.q, l.root)
         self.ntt_domain = True
 
     def convert_NTT_to_RNS(self):
         for l in self.limbs:
-            l.coeffs = ntt.intt_psi(l.coeffs, self.n, l.q, l.root)
+            l.coeffs = ntt.fast_intt(l.coeffs, l.q, l.root)
         self.ntt_domain = False
 
     ###########################################################################
